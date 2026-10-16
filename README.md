@@ -3,11 +3,14 @@
 Push a sine-Gordon kink with a field and watch it behave like a relativistic particle. A C11 scalar field theory in 1+1 dimensions, `φ_tt = φ_xx − sin φ`, a standard toy model that shares its structure with quantum field theory.
 (C言語の1+1次元スカラー場シミュレータ。場の孤立波(キンク)を押して、ローレンツ収縮と速度の上限を観察します。)
 
+![demo](docs/demo.gif)
+
 ## Run
 
 ```sh
 make && ./field-ripple          # interactive
 ./field-ripple --snapshot       # one frame, no terminal needed
+./field-ripple --gif docs/demo.gif  # scripted push-and-brake run as an animated GIF
 make test && make plots         # unit tests and docs/*.svg
 docker build -t field-ripple .  # same, reproducibly
 ```
