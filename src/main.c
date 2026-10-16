@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include "field.h"
+#include "gif.h"
 #include "render.h"
 #include "svg.h"
 
@@ -102,6 +103,44 @@ static int snapshot(void)
     return ok ? 0 : 1;
 }
 
+static int gif_colour(char c) { return c == '|' ? 2 : 3; }
+
+/* Scripted run: push the kink right with a bias field, then brake it near the target mark. */
+static int gif_demo(const char *path)
+{
+    Field f;
+    if (field_init(&f, GRID, -100.0, DX, DT, 0)) return 1;
+    field_set_kink(&f, 0.0, 0.0, 1);
+    unsigned char pal[GIF_COLOURS][3] = {{8, 10, 24}, {235, 235, 235}, {255, 205, 60}, {90, 210, 255}};
+    const int scale = 3, cw = RENDER_COLS * 6 * scale, ch = RENDER_ROWS * 9 * scale;
+    static unsigned char px[RENDER_COLS * 6 * 3 * RENDER_ROWS * 9 * 3];
+    static char buf[RENDER_COLS * RENDER_ROWS * 4];
+    Gif *g = gif_open(path, cw, ch, pal, 6);
+    if (!g) return 1;
+    enum { MAX_FRAMES = 140, STEPS = 12 };
+    double x = field_kink_position(&f), prev = x;
+    int braking = 0;
+    for (int k = 0; k < MAX_FRAMES; k++) {
+        double v = (x - prev) / (STEPS * DT);
+        if (!braking && x >= 12.0) braking = 1;
+        if (braking && v <= 0.0) break;
+        f.eps = braking ? 0.05 : -0.05;
+        render_frame(&f, x, TARGET, buf, sizeof buf);
+        gif_draw_text(px, cw, ch, buf, scale, gif_colour);
+        if (gif_frame(g, px, 0)) return 1;
+        for (int n = 0; n < STEPS; n++) field_step(&f);
+        prev = x;
+        x = field_kink_position(&f);
+    }
+    f.eps = 0.0;
+    render_frame(&f, x, TARGET, buf, sizeof buf);
+    gif_draw_text(px, cw, ch, buf, scale, gif_colour);
+    if (gif_frame(g, px, 250)) return 1;
+    printf("kink stopped at x=%.2f\n", x);
+    field_free(&f);
+    return gif_close(g) ? 1 : 0;
+}
+
 static struct termios saved;
 static void restore(void) { tcsetattr(STDIN_FILENO, TCSANOW, &saved); fputs("\033[?25h", stdout); }
 
@@ -158,5 +197,6 @@ int main(int argc, char **argv)
 {
     if (argc > 1 && strcmp(argv[1], "--headless") == 0) return headless(argc > 2 ? argv[2] : ".");
     if (argc > 1 && strcmp(argv[1], "--snapshot") == 0) return snapshot();
+    if (argc > 1 && strcmp(argv[1], "--gif") == 0) return gif_demo(argc > 2 ? argv[2] : "demo.gif");
     return play();
 }
