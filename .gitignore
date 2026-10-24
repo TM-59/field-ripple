@@ -1,3 +1,10 @@
 field-ripple
 test_field
 test_gif
+test_observer
+bench_field
+dist/
+out/
+node_modules/
+__pycache__/
+.env
