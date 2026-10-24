@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#09131e">
+  <title>Field Ripple — a sine-Gordon observatory</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="masthead">
+    <a class="brand" href="./" aria-label="Field Ripple home"><span class="brand-mark">∿</span> FIELD RIPPLE</a>
+    <span class="edition">01 / FIELD OBSERVATORY</span>
+  </header>
+  <main>
+    <section id="entry" class="entry" aria-labelledby="entry-title">
+      <div class="entry-copy">
+        <p class="eyebrow">A PARTICLE MADE OF A FIELD</p>
+        <h1 id="entry-title">Push a ripple.<br>Watch space<br><em>draw it tighter.</em></h1>
+        <p class="intro">A travelling kink in a sine-Gordon field behaves like a relativistic particle. Give it a push and watch its width shrink as its speed approaches light.</p>
+        <button id="start" class="primary" disabled>Preparing the observatory…</button>
+        <p id="load-status" role="status">Loading the field.</p>
+      </div>
+      <div class="entry-caption"><span class="caption-rule"></span>THE OBSERVATORY <span>Original concept art · an imagined laboratory</span></div>
+      <div class="entry-foot"><span>1 + 1 DIMENSIONS</span><span>φ<sub>tt</sub> = φ<sub>xx</sub> − sin φ + ε</span><span>DIMENSIONLESS · c = 1</span></div>
+    </section>
+    <section id="observatory" hidden aria-labelledby="lab-title">
+      <div class="lab-heading">
+        <div><p class="eyebrow">EXPERIMENT 01 / SINE-GORDON</p><h1 id="lab-title">The travelling kink</h1><p>One field. Two vacua. A particle between them.</p></div>
+        <div class="live-state"><span id="status-lamp"></span><span id="state-label" role="status">Paused</span></div>
+      </div>
+      <div class="workspace">
+        <section class="instrument" aria-label="Field measurements">
+          <div class="instrument-title"><h2>Field profile</h2><span>FOLLOWING THE KINK</span></div>
+          <div class="legend"><span class="cyan">— φ / rad</span><span class="ghost">┄ rest profile</span><span class="amber">— energy density</span></div>
+          <canvas id="field-plot" role="img" aria-label="Field in radians and energy density against distance from the kink. Solid cyan is the measured field; dashed grey is the rest profile; amber is energy density."></canvas>
+          <p class="axis-note">x − x<sub>kink</sub> · dimensionless distance</p>
+          <div class="position-title"><span>POSITION IN THE SIMULATED DOMAIN</span><output id="position-label">x = 0.00</output></div>
+          <div class="position-track"><span class="origin"></span><span id="position-marker"></span></div>
+          <div class="position-scale"><span>−75</span><span>0</span><span>+75</span></div>
+        </section>
+        <aside class="controls" aria-label="Experiment controls">
+          <div class="instrument-title"><h2>Set the experiment</h2><span>c = 1</span></div>
+          <label for="speed">Initial speed <output id="speed-label">0.00 c</output></label>
+          <input id="speed" type="range" min="-0.9" max="0.9" step="0.1" value="0">
+          <div class="presets" aria-label="Initial speed presets"><button data-speed="0">At rest</button><button data-speed="0.6">0.6 c</button><button data-speed="0.9">0.9 c</button></div>
+          <p class="hint">Changing the initial speed starts a fresh observation.</p>
+          <div class="divider"></div>
+          <h3>Apply a force <span>HOLD</span></h3>
+          <div class="push-controls"><button id="left" class="push" aria-label="Push left">← <span>Left <kbd>A</kbd></span></button><button id="right" class="push" aria-label="Push right">→ <span>Right <kbd>D</kbd></span></button></div>
+          <p class="hint">Release to coast. Push against the motion to brake.</p>
+          <div class="transport"><button id="pause" class="primary">Resume</button><button id="reset">Reset</button></div>
+          <p class="hint">Space pauses · R resets</p>
+          <p id="limit-note" hidden role="status">Observation complete: finite-domain limit reached. Reset to observe again.</p>
+        </aside>
+      </div>
+      <section class="readouts" aria-label="Live physical quantities" aria-live="off">
+        <div><span>SIMULATION TIME</span><output id="time">0.00</output><small>dimensionless t</small></div>
+        <div><span>SPEED / c</span><output id="velocity">0.000</output><small id="force-label">coasting · ε = 0</small></div>
+        <div><span>TOTAL FIELD ENERGY</span><output id="energy">8.000</output><small>rest kink E₀ = 8</small></div>
+        <div><span>WIDTH / REST WIDTH</span><output id="width">1.000</output><small>measured 2 / max |∂φ/∂x|</small></div>
+      </section>
+      <section class="explanation">
+        <div><p class="eyebrow">WHAT TO LOOK FOR</p><h2>Faster motion. <br>A narrower field.</h2></div>
+        <div><p>The solid curve comes from the evolving field. The dashed curve is a stationary kink, centred on the same position. Try <strong>0.9 c</strong>: the transition becomes much steeper.</p><p>For a free kink, width = √(1 − v²) and E = 8 / √(1 − v²). With a force applied, the field also excites background waves; its total energy includes those waves.</p><p class="model-note">Units are dimensionless, c = 1. Leapfrog: Δx = 0.1, Δt = 0.05. Observation stops at |x| ≥ 75 or t = 120, before boundary effects dominate. Concept art is an imagined setting; the plots are computed measurements.</p></div>
+      </section>
+    </section>
+    <p id="art-warning" hidden>Observatory illustration unavailable. All measurements and controls remain available.</p>
+    <noscript>This observatory needs JavaScript and WebAssembly. The repository also provides a C terminal version.</noscript>
+  </main>
+  <footer><span>FIELD RIPPLE / A SCALAR FIELD EXPERIMENT</span><span>NO SAVES · NO EXTERNAL REQUESTS</span></footer>
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>
