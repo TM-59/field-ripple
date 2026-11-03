@@ -131,6 +131,11 @@ try {
         }
         continue;
       }
+      assert(await p.evaluate(()=>document.getElementById('l-lost').textContent===String(window.lineView.fails)));
+      if(v.leg===3&&ford===0) {
+        assert.equal(v.target,49);
+        assert.match(await p.locator('#line-goal').textContent(), /ford|motor|winding|catch arm/i);
+      }
       if(shots&&!legShot&&v.leg===1&&Math.abs(v.remaining)<8){await shot(p,'line-play');legShot=true;}
       const dir=v.remaining>=0?1:-1,dist=Math.abs(v.remaining),speed=v.coastV*dir;
       const aim=dist<0.8?0:Math.min(0.42,0.22*Math.sqrt(Math.max(0,dist-0.8)));
@@ -147,7 +152,7 @@ try {
     assert.deepEqual(n.quiet,['spill','ford','cut']);
   }
   assert(/heard a bell where no bell should be/.test(nightA.ending)&&/never rang/.test(nightB.ending));
-  checks.push(`flood line: two nights with real keys (church + ford bell, ${nightA.time.toFixed(0)} t, ${nightA.fails} lost; mill + siren, ${nightB.time.toFixed(0)} t, ${nightB.fails} lost); 7 scenes in order, both endings, heavy scenes with no banner`);
+  checks.push(`flood line: two nights with real keys (church + ford bell, ${nightA.time.toFixed(0)} t, ${nightA.fails} failures; mill + siren, ${nightB.time.toFixed(0)} t, ${nightB.fails} failures); 7 scenes in order, both endings, heavy scenes with no banner`);
 
   // Phone, upright and sideways: touch only. Words 14 CSS px or more, targets 44 px or more, the plot over half the screen.
   for(const [w,h,name] of [[375,812,'line-mobile'],[812,375,null]]){

@@ -1,0 +1,844 @@
+{
+  "date": "2026-11-03",
+  "compiler": "GCC 14.2.0-19, Debian 13; glibc/libm 2.41-12+deb13u4",
+  "local_docker_used": false,
+  "baseline": {
+    "score_worst": 92,
+    "score_median": 92,
+    "paired_seeds": 24
+  },
+  "recorded": {
+    "seed_base": 20261103,
+    "paired_seeds": 96,
+    "means": {
+      "all_on": {
+        "seconds": 446.1458333333333,
+        "fails": 2.59375,
+        "red": 217.09114583333334
+      },
+      "all_off": {
+        "seconds": 420.35833333333335,
+        "fails": 7.21875,
+        "red": 420.1927083333333
+      },
+      "no_hut": {
+        "seconds": 510.725,
+        "fails": 9.041666666666666,
+        "red": 410.10260416666665
+      },
+      "no_bell": {
+        "seconds": 499.3645833333333,
+        "fails": 7.760416666666667,
+        "red": 299.1380208333333
+      },
+      "no_spill": {
+        "seconds": 381.93333333333334,
+        "fails": 1.125,
+        "red": 25.227083333333333
+      },
+      "no_cut": {
+        "seconds": 381.4875,
+        "fails": 1.3229166666666667,
+        "red": 158.88697916666666
+      },
+      "stones_path0": {
+        "seconds": 378.23125,
+        "fails": 3.5729166666666665,
+        "red": 216.13802083333334
+      },
+      "ford_path0": {
+        "seconds": 474.30833333333334,
+        "fails": 1.3854166666666667,
+        "red": 24.438020833333333
+      }
+    },
+    "ablation_clock_max": 758.4,
+    "run_guard_t": 1200,
+    "effect": {
+      "ok": true,
+      "metrics": {
+        "seconds": {
+          "ok": true,
+          "n": 96,
+          "same_sign": 61,
+          "p": 0.0103,
+          "rel": 0.061,
+          "mean_diff": 25.788,
+          "kind": "outcome"
+        },
+        "fails": {
+          "ok": true,
+          "n": 96,
+          "same_sign": 93,
+          "p": 0.0,
+          "rel": 0.641,
+          "mean_diff": -4.625,
+          "kind": "outcome"
+        },
+        "red": {
+          "ok": true,
+          "n": 96,
+          "same_sign": 96,
+          "p": 0.0,
+          "rel": 0.483,
+          "mean_diff": -203.102,
+          "kind": "resource"
+        }
+      },
+      "outcome_hits": [
+        "seconds",
+        "fails"
+      ],
+      "need": 2
+    },
+    "beats": {
+      "hut": {
+        "ok": true,
+        "metrics": {
+          "seconds": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 71,
+            "p": 0.0,
+            "rel": 0.126,
+            "mean_diff": -64.579,
+            "kind": "outcome"
+          },
+          "fails": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 94,
+            "p": 0.0,
+            "rel": 0.713,
+            "mean_diff": -6.448,
+            "kind": "outcome"
+          },
+          "red": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 94,
+            "p": 0.0,
+            "rel": 0.471,
+            "mean_diff": -193.011,
+            "kind": "resource"
+          }
+        },
+        "outcome_hits": [
+          "seconds",
+          "fails"
+        ],
+        "need": 2
+      },
+      "bell": {
+        "ok": true,
+        "metrics": {
+          "seconds": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 80,
+            "p": 0.0,
+            "rel": 0.107,
+            "mean_diff": -53.219,
+            "kind": "outcome"
+          },
+          "fails": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 95,
+            "p": 0.0,
+            "rel": 0.666,
+            "mean_diff": -5.167,
+            "kind": "outcome"
+          },
+          "red": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 89,
+            "p": 0.0,
+            "rel": 0.274,
+            "mean_diff": -82.047,
+            "kind": "resource"
+          }
+        },
+        "outcome_hits": [
+          "seconds",
+          "fails"
+        ],
+        "need": 2
+      },
+      "spill": {
+        "ok": true,
+        "metrics": {
+          "seconds": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 84,
+            "p": 0.0,
+            "rel": 0.168,
+            "mean_diff": 64.213,
+            "kind": "outcome"
+          },
+          "fails": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 80,
+            "p": 0.0,
+            "rel": 1.306,
+            "mean_diff": 1.469,
+            "kind": "outcome"
+          },
+          "red": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 96,
+            "p": 0.0,
+            "rel": 7.605,
+            "mean_diff": 191.864,
+            "kind": "resource"
+          }
+        },
+        "outcome_hits": [
+          "seconds",
+          "fails"
+        ],
+        "need": 2
+      },
+      "cut": {
+        "ok": true,
+        "metrics": {
+          "seconds": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 88,
+            "p": 0.0,
+            "rel": 0.169,
+            "mean_diff": 64.658,
+            "kind": "outcome"
+          },
+          "fails": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 78,
+            "p": 0.0,
+            "rel": 0.961,
+            "mean_diff": 1.271,
+            "kind": "outcome"
+          },
+          "red": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 87,
+            "p": 0.0,
+            "rel": 0.366,
+            "mean_diff": 58.204,
+            "kind": "resource"
+          }
+        },
+        "outcome_hits": [
+          "seconds",
+          "fails"
+        ],
+        "need": 2
+      }
+    },
+    "choices": {
+      "stones": {
+        "ok": true,
+        "why": "ok",
+        "dominated": [],
+        "flat": [],
+        "quasi": [],
+        "felt_missing": [],
+        "unfelt": []
+      },
+      "ford": {
+        "ok": true,
+        "why": "ok",
+        "dominated": [],
+        "flat": [],
+        "quasi": [],
+        "felt_missing": [],
+        "unfelt": []
+      }
+    },
+    "tension": {
+      "present": true,
+      "ok": true,
+      "gates": [],
+      "seeds": 16,
+      "runs": 192,
+      "segments": 5,
+      "late_share": 0.99,
+      "crisis_segments": 3,
+      "need_segments": 3,
+      "no_failure_share": 0.016,
+      "no_failure_upper": 0.073,
+      "stuck_share": 0.0,
+      "stuck_upper": 0.038,
+      "paths": {
+        "ford=0": {
+          "runs": 96,
+          "no_failure_share": 0.021,
+          "no_failure_upper": 0.073,
+          "stuck_upper": 0.038
+        },
+        "ford=1": {
+          "runs": 96,
+          "no_failure_share": 0.01,
+          "no_failure_upper": 0.057,
+          "stuck_upper": 0.038
+        },
+        "stones=0": {
+          "runs": 96,
+          "no_failure_share": 0.021,
+          "no_failure_upper": 0.073,
+          "stuck_upper": 0.038
+        },
+        "stones=1": {
+          "runs": 96,
+          "no_failure_share": 0.01,
+          "no_failure_upper": 0.057,
+          "stuck_upper": 0.038
+        }
+      },
+      "path_missing": false,
+      "difficulty": {
+        "flag": false,
+        "combos": {
+          "{\"ford\": \"0\", \"stones\": \"0\"}": {
+            "runs": 48,
+            "no_failure_share": 0.042,
+            "lower": 0.012,
+            "upper": 0.14
+          },
+          "{\"ford\": \"0\", \"stones\": \"1\"}": {
+            "runs": 48,
+            "no_failure_share": 0.0,
+            "lower": 0.0,
+            "upper": 0.074
+          },
+          "{\"ford\": \"1\", \"stones\": \"0\"}": {
+            "runs": 48,
+            "no_failure_share": 0.0,
+            "lower": 0.0,
+            "upper": 0.074
+          },
+          "{\"ford\": \"1\", \"stones\": \"1\"}": {
+            "runs": 48,
+            "no_failure_share": 0.021,
+            "lower": 0.004,
+            "upper": 0.109
+          }
+        },
+        "choices": [],
+        "easiest": "{\"ford\": \"0\", \"stones\": \"0\"}",
+        "hardest": "{\"ford\": \"0\", \"stones\": \"1\"}",
+        "gap": 0.042
+      },
+      "valley": true,
+      "dip": true,
+      "level": [
+        0.0,
+        0.83,
+        0.06,
+        0.95,
+        1.56
+      ],
+      "crisis_seed_share": [
+        0.0,
+        0.83,
+        0.06,
+        0.71,
+        0.99
+      ],
+      "parts": {
+        "late": 3.0,
+        "segments": 2.0,
+        "failure": 3.0,
+        "valley": 2.0
+      },
+      "points": 10.0
+    }
+  },
+  "separate_seed_group": {
+    "seed_base": 20261104,
+    "paired_seeds": 96,
+    "means": {
+      "all_on": {
+        "seconds": 456.45208333333335,
+        "fails": 2.84375,
+        "red": 229.88125
+      },
+      "all_off": {
+        "seconds": 420.66041666666666,
+        "fails": 7.291666666666667,
+        "red": 420.41197916666664
+      },
+      "no_hut": {
+        "seconds": 514.9333333333333,
+        "fails": 9.385416666666666,
+        "red": 415.64739583333335
+      },
+      "no_bell": {
+        "seconds": 512.9125,
+        "fails": 8.21875,
+        "red": 314.540625
+      },
+      "no_spill": {
+        "seconds": 378.9270833333333,
+        "fails": 1.0520833333333333,
+        "red": 25.055729166666666
+      },
+      "no_cut": {
+        "seconds": 383.7270833333333,
+        "fails": 1.4479166666666667,
+        "red": 165.23229166666667
+      },
+      "stones_path0": {
+        "seconds": 380.4166666666667,
+        "fails": 3.40625,
+        "red": 219.39739583333332
+      },
+      "ford_path0": {
+        "seconds": 471.8833333333333,
+        "fails": 1.4375,
+        "red": 24.836458333333333
+      }
+    },
+    "ablation_clock_max": 805.2,
+    "run_guard_t": 1200,
+    "effect": {
+      "ok": true,
+      "metrics": {
+        "seconds": {
+          "ok": true,
+          "n": 96,
+          "same_sign": 62,
+          "p": 0.0056,
+          "rel": 0.085,
+          "mean_diff": 35.792,
+          "kind": "outcome"
+        },
+        "fails": {
+          "ok": true,
+          "n": 96,
+          "same_sign": 93,
+          "p": 0.0,
+          "rel": 0.61,
+          "mean_diff": -4.448,
+          "kind": "outcome"
+        },
+        "red": {
+          "ok": true,
+          "n": 96,
+          "same_sign": 94,
+          "p": 0.0,
+          "rel": 0.453,
+          "mean_diff": -190.531,
+          "kind": "resource"
+        }
+      },
+      "outcome_hits": [
+        "seconds",
+        "fails"
+      ],
+      "need": 2
+    },
+    "beats": {
+      "hut": {
+        "ok": true,
+        "metrics": {
+          "seconds": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 68,
+            "p": 0.0001,
+            "rel": 0.114,
+            "mean_diff": -58.481,
+            "kind": "outcome"
+          },
+          "fails": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 93,
+            "p": 0.0,
+            "rel": 0.697,
+            "mean_diff": -6.542,
+            "kind": "outcome"
+          },
+          "red": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 91,
+            "p": 0.0,
+            "rel": 0.447,
+            "mean_diff": -185.766,
+            "kind": "resource"
+          }
+        },
+        "outcome_hits": [
+          "seconds",
+          "fails"
+        ],
+        "need": 2
+      },
+      "bell": {
+        "ok": true,
+        "metrics": {
+          "seconds": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 74,
+            "p": 0.0,
+            "rel": 0.11,
+            "mean_diff": -56.46,
+            "kind": "outcome"
+          },
+          "fails": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 95,
+            "p": 0.0,
+            "rel": 0.654,
+            "mean_diff": -5.375,
+            "kind": "outcome"
+          },
+          "red": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 87,
+            "p": 0.0,
+            "rel": 0.269,
+            "mean_diff": -84.659,
+            "kind": "resource"
+          }
+        },
+        "outcome_hits": [
+          "seconds",
+          "fails"
+        ],
+        "need": 2
+      },
+      "spill": {
+        "ok": true,
+        "metrics": {
+          "seconds": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 88,
+            "p": 0.0,
+            "rel": 0.205,
+            "mean_diff": 77.525,
+            "kind": "outcome"
+          },
+          "fails": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 85,
+            "p": 0.0,
+            "rel": 1.703,
+            "mean_diff": 1.792,
+            "kind": "outcome"
+          },
+          "red": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 96,
+            "p": 0.0,
+            "rel": 8.175,
+            "mean_diff": 204.826,
+            "kind": "resource"
+          }
+        },
+        "outcome_hits": [
+          "seconds",
+          "fails"
+        ],
+        "need": 2
+      },
+      "cut": {
+        "ok": true,
+        "metrics": {
+          "seconds": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 86,
+            "p": 0.0,
+            "rel": 0.19,
+            "mean_diff": 72.725,
+            "kind": "outcome"
+          },
+          "fails": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 81,
+            "p": 0.0,
+            "rel": 0.964,
+            "mean_diff": 1.396,
+            "kind": "outcome"
+          },
+          "red": {
+            "ok": true,
+            "n": 96,
+            "same_sign": 83,
+            "p": 0.0,
+            "rel": 0.391,
+            "mean_diff": 64.649,
+            "kind": "resource"
+          }
+        },
+        "outcome_hits": [
+          "seconds",
+          "fails"
+        ],
+        "need": 2
+      }
+    },
+    "choices": {
+      "stones": {
+        "ok": true,
+        "why": "準支配(選択の点を半分): 0>1 得 seconds / 1 の得 なし",
+        "dominated": [],
+        "flat": [],
+        "quasi": [
+          "0>1 得 seconds / 1 の得 なし"
+        ],
+        "felt_missing": [],
+        "unfelt": []
+      },
+      "ford": {
+        "ok": true,
+        "why": "準支配(選択の点を半分): 0>1 得 fails / 1 の得 なし",
+        "dominated": [],
+        "flat": [],
+        "quasi": [
+          "0>1 得 fails / 1 の得 なし"
+        ],
+        "felt_missing": [],
+        "unfelt": []
+      }
+    },
+    "tension": {
+      "present": true,
+      "ok": true,
+      "gates": [],
+      "seeds": 16,
+      "runs": 192,
+      "segments": 5,
+      "late_share": 1.0,
+      "crisis_segments": 3,
+      "need_segments": 3,
+      "no_failure_share": 0.0,
+      "no_failure_upper": 0.038,
+      "stuck_share": 0.0,
+      "stuck_upper": 0.038,
+      "paths": {
+        "ford=0": {
+          "runs": 96,
+          "no_failure_share": 0.0,
+          "no_failure_upper": 0.038,
+          "stuck_upper": 0.038
+        },
+        "ford=1": {
+          "runs": 96,
+          "no_failure_share": 0.0,
+          "no_failure_upper": 0.038,
+          "stuck_upper": 0.038
+        },
+        "stones=0": {
+          "runs": 96,
+          "no_failure_share": 0.0,
+          "no_failure_upper": 0.038,
+          "stuck_upper": 0.038
+        },
+        "stones=1": {
+          "runs": 96,
+          "no_failure_share": 0.0,
+          "no_failure_upper": 0.038,
+          "stuck_upper": 0.038
+        }
+      },
+      "path_missing": false,
+      "difficulty": {
+        "flag": false,
+        "combos": {
+          "{\"ford\": \"0\", \"stones\": \"0\"}": {
+            "runs": 48,
+            "no_failure_share": 0.0,
+            "lower": 0.0,
+            "upper": 0.074
+          },
+          "{\"ford\": \"0\", \"stones\": \"1\"}": {
+            "runs": 48,
+            "no_failure_share": 0.0,
+            "lower": 0.0,
+            "upper": 0.074
+          },
+          "{\"ford\": \"1\", \"stones\": \"0\"}": {
+            "runs": 48,
+            "no_failure_share": 0.0,
+            "lower": 0.0,
+            "upper": 0.074
+          },
+          "{\"ford\": \"1\", \"stones\": \"1\"}": {
+            "runs": 48,
+            "no_failure_share": 0.0,
+            "lower": 0.0,
+            "upper": 0.074
+          }
+        },
+        "choices": [],
+        "easiest": "{\"ford\": \"0\", \"stones\": \"0\"}",
+        "hardest": "{\"ford\": \"0\", \"stones\": \"0\"}",
+        "gap": 0.0
+      },
+      "valley": true,
+      "dip": true,
+      "level": [
+        0.02,
+        0.8,
+        0.03,
+        0.91,
+        1.57
+      ],
+      "crisis_seed_share": [
+        0.02,
+        0.8,
+        0.03,
+        0.71,
+        0.99
+      ],
+      "parts": {
+        "late": 3.0,
+        "segments": 2.0,
+        "failure": 3.0,
+        "valley": 2.0
+      },
+      "points": 10.0
+    }
+  },
+  "limitations": [
+    "Both choices pass opposite-gain checks in the recorded group. In the separate seed group the church failure advantage fails the sign test and the ford time disadvantage fails the 5% size threshold; both are classified quasi-dominated.",
+    "Physical iPhone/Safari, other browser engines, human first-use balance and long interactive sessions are unverified."
+  ],
+  "smoke": {
+    "checks": [
+      "subpath: WASM and original art load; entry stays still",
+      "entry opens the measured field at rest, with E≈8",
+      "0.6c and 0.9c: Lorentz width, 8γ energy, x≈vt; pause freezes state",
+      "keyboard right push accelerates C field; release coasts",
+      "opposing keyboard force brakes the kink",
+      "focus loss pauses and clears input",
+      "390px: real left touch, cancellation and pause; horizontal overflow 0",
+      "finite-domain limit stops and explains completion; reset recovers",
+      "flood line: two nights with real keys (church + ford bell, 1144 t, 6 failures; mill + siren, 469 t, 3 failures); 7 scenes in order, both endings, heavy scenes with no banner",
+      "375x812 touch: hold moves the turn; words >=14 px, targets >=44 px, plot 60 % of the screen",
+      "812x375 touch: hold moves the turn; words >=14 px, targets >=44 px, plot 61 % of the screen",
+      "missing illustration keeps readable controls and measured physics",
+      "page errors 0; console errors 0; unexpected HTTP failures 0; external requests 0"
+    ],
+    "errors": [],
+    "consoleErrors": [],
+    "failedResponses": [],
+    "externalRequests": [],
+    "images": [
+      {
+        "file": "docs/images/before.png",
+        "bytes": 5640
+      },
+      {
+        "file": "docs/images/title.jpg",
+        "bytes": 113009
+      },
+      {
+        "file": "docs/images/coasting.jpg",
+        "bytes": 169054
+      },
+      {
+        "file": "docs/images/contracted.jpg",
+        "bytes": 169739
+      },
+      {
+        "file": "docs/images/mobile.jpg",
+        "bytes": 135759
+      },
+      {
+        "file": "docs/images/line-play.jpg",
+        "bytes": 72992
+      },
+      {
+        "file": "docs/images/line-choice.jpg",
+        "bytes": 103772
+      },
+      {
+        "file": "docs/images/line-bottom.jpg",
+        "bytes": 113269
+      },
+      {
+        "file": "docs/images/line-ending-ford.jpg",
+        "bytes": 90606
+      },
+      {
+        "file": "docs/images/line-ending-siren.jpg",
+        "bytes": 93487
+      },
+      {
+        "file": "docs/images/line-mobile.jpg",
+        "bytes": 128594
+      }
+    ]
+  },
+  "playability": {
+    "load": {
+      "ok": true,
+      "value": "3174 ms"
+    },
+    "touch_input": {
+      "ok": true,
+      "value": "click,pointerdown,pointerup"
+    },
+    "progress": {
+      "ok": true,
+      "value": "p:7.1 / l:7.1 (上限 25s)"
+    },
+    "console": {
+      "ok": true,
+      "value": "0"
+    },
+    "text": {
+      "ok": true,
+      "value": "14.0px (p) 「FIELD RIPPLE」",
+      "min": 14
+    },
+    "tap": {
+      "ok": true,
+      "value": "165×44 (p) 「∿\nFIELD RIPPLE」",
+      "min": 44
+    },
+    "orient": {
+      "ok": true,
+      "value": "p:画面の59% / l:画面の61%"
+    }
+  },
+  "download_bytes": 335442,
+  "native_checks": [
+    "make test",
+    "make story-check",
+    "make bench",
+    "make plots"
+  ],
+  "score": {
+    "worst": 93,
+    "median": 93,
+    "seed_independence_warnings": 0
+  },
+  "protected_files": [
+    "src/field.c",
+    "docs/run.csv",
+    "docs/profile.svg",
+    "docs/energy.svg",
+    "docs/push.svg",
+    "docs/demo.gif"
+  ],
+  "protected_byte_identical": true
+}

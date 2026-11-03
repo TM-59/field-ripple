@@ -15,7 +15,7 @@ The Turn Line is a mile of pendulums on a wire coupled by torsion springs, the m
 
 - Hold **→ / D** (down the valley) or **← / A** (up the valley). The motor takes one period of the line's slowest ringing (2π t) to spin up and down, so you brake early. Bring the turn to the green mark and let it stand still with the motor off.
 - The cell drains while the motor turns. In the red it is a crisis; empty, the motor stops (Kit cranks it, or later the turn is lost and Ada winds a fresh one).
-- Two choices change the night: the mill bell or the church bell, and the ford bell or the hill siren. Each trades time for charge, and the second decides the ending.
+- Two choices change the night: the mill bell or the church bell, and the ford bell or the hill siren. Each trades time for fewer failures: a longer bell route supplies charge, and the ford branch bypasses the leaking cell. The second choice also decides the ending.
 - `src/line.c` sits on top of the unchanged `src/field.c`. Story scenes change only game numbers (charge, the next mark, how much the speed needle wobbles, a wet cell's leak, what a lost turn costs, the drum's torque). The words are in `web/app.mjs`; the beat sheet is `docs/narrative/beats.json`.
 
 ![A turn on its way to the mill mark](docs/images/line-play.jpg)
@@ -24,7 +24,7 @@ The Turn Line is a mile of pendulums on a wire coupled by torsion springs, the m
 ![First light after the ford bell](docs/images/line-ending-ford.jpg)
 ![Upright phone, touch only](docs/images/line-mobile.jpg)
 
-`make story` runs 396 nights with a keeper who reads only the gauges and writes `docs/narrative/{play-order,ablation,tension}.json`; `make test` checks the scene order, every story number, the quiet heavy scenes and both choices, and re-runs bench rows that must appear byte for byte. Generate and check them in the Dockerfile's Debian 13 toolchain (CI runs `docker build .`).
+`make story` runs 972 nights (96 paired seeds for each ablation arm, plus scene-order and independent tension runs) with a keeper who reads only the gauges and writes `docs/narrative/{play-order,ablation,tension}.json`; `make test` checks the scene order, every story number, the quiet heavy scenes and both choices, and re-runs eight representative bench rows that must appear byte for byte. `make story-check` regenerates and compares every row. The two outcome metrics are the night clock and the HUD **Failures** counter; time in the red is a charge reading, recorded as `resource` and excluded from outcome tests. All four reward/punishment/loss beats must change both outcomes in the expected direction; each choice must give each path a measurable advantage. Generate and check them with Debian 13 GCC 14 and its libm (CI uses the Dockerfile; local checks can use the same Debian packages extracted into a temporary directory). See [outcome validation](docs/outcome-validation.md).
 
 ## Run
 

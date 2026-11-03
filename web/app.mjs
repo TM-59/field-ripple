@@ -199,6 +199,7 @@ const SCENES = [
     ['Ada', 'Or ring the hill siren. Dry posts. The whole town hears it, and the line is still ours afterwards.'],
     ['Kit', 'There are twenty-two kids on that bus.'],
     ['Ada', 'I can count, Kit.']],
+    note: 'The ferry house connects its dry cell to the ford branch: it bypasses your leaking cell. The bell is farther away, and you must hold it ringing. The hill siren is a shorter run on your wet cell.',
     options: ['Send it down to the ford bell (past the water line, then hold it while the bell rings)', 'Ring the hill siren (dry posts, the town hears it)']},
   {id: 'cut', title: 'The lower posts', heavy: true, lines: [
     ['Kit', "The siren's going, the whole hill can hear it. I can't see the ford road from here, I can't see anything past the— the posts. The posts below me are going over one after another, the arm's tipping, I can't—"],
@@ -225,7 +226,7 @@ const SCENES = [
 ];
 const LEG_NAMES = ['LEG 1 / 5 · TO THE WEIR', 'LEG 2 / 5 · TO THE BELL', 'LEG 3 / 5 · BACK TO THE GORGE',
   'LEG 4 / 5 · THE WATER IN THE HUT', 'LEG 5 / 5 · UP TO THE DAM ROAD'];
-const MARKS = [[18,'WEIR'],[30,'MILL'],[42,'CHURCH'],[20,'GORGE'],[32,'SIREN'],[44,'FORD'],[-10,'DAM ROAD']];
+const MARKS = [[18,'WEIR'],[30,'MILL'],[42,'CHURCH'],[20,'GORGE'],[32,'SIREN'],[49,'FORD'],[-10,'DAM ROAD']];
 function markName(x) { const m = MARKS.find(([p]) => Math.abs(p - x) < 0.01); return m ? m[1] : 'MARK'; }
 
 function lineStart() {
@@ -299,7 +300,7 @@ function fmtSigned(value, digits) { return value.toFixed(digits).replace('-', '�
 function lineGoal() {
   if (lineDone()) return 'The night is over.';
   const name = markName(ls.target);
-  if (ls.drift > 0) return ls.count ? 'Motor dead. Kit is cranking your cell from her end.' : 'Motor jammed. Wait for it.';
+  if (ls.drift > 0) return 'Motor stopped. Wait for the winding drum or catch arm to be ready.';
   const church = ls.leg === 1;
   if (ls.holdNeed > 0 && ls.held > 0) return church
     ? `The church bell is ringing and the sexton is cranking. Keep the motor off: ${ls.held.toFixed(1)} of ${ls.holdNeed.toFixed(0)} t.`
