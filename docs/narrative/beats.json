@@ -73,7 +73,7 @@
     {
       "id": "bell",
       "chapter": 2,
-      "summary": "The bell rings and the carts turn up the hill past the quarry. Kit takes the cell out of her board and puts it into the line; with it, the cell spends less time in the red once the night turns wet.",
+      "summary": "The bell rings and the carts turn up the hill past the quarry. Kit takes the cell out of her board and puts it into the line; with it, the wet leg needs fewer cranking stops and the night is shorter.",
       "valence": 2,
       "intensity": 2,
       "emotion": "joy",
@@ -111,7 +111,7 @@
     {
       "id": "ford",
       "chapter": 4,
-      "summary": "The late bus is not back. The ford bell's post is under the water line; a turn can reach it, but it must stand on the low arm while the bell rings (the ferry house's cell comes up the line meanwhile). Or ring the hill siren on dry posts and keep the line for the town. Kit: twenty-two kids. Ada: I can count.",
+      "summary": "The late bus is not back. The ford bell's post is under the water line; a turn can reach it, but it must stand on the low arm while the bell rings (the ferry house connects its dry cell as soon as this branch is chosen, bypassing the leaking cell). Or ring the hill siren on dry posts and keep the line for the town. Kit: twenty-two kids. Ada: I can count.",
       "valence": -2,
       "intensity": 3,
       "emotion": "fear",
@@ -147,7 +147,7 @@
     {
       "id": "cut",
       "chapter": 5,
-      "summary": "The river takes the lower posts. Kit's voice breaks off and her catch arm is gone: nobody steadies the speed needle, the slack line slips on the drum, Ada's old arm at the dam road jams under a fast turn, and a dry cell means the turn coasts off and is lost. You say the rule to an empty wire.",
+      "summary": "The river takes the lower posts. Kit's voice breaks off and her catch arm is gone: nobody steadies the speed needle, the slack line slips on the drum, Ada's old arm at the dam road jams under a fast turn, and a dry cell means the turn coasts off and is lost. Ada needs time to wind a fresh turn at the last mark. You say the rule to an empty wire.",
       "valence": -3,
       "intensity": 3,
       "emotion": "sorrow",

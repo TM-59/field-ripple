@@ -7,22 +7,22 @@
 #define L_N 1200               /* grid: x in [-60, 60), dx 0.1, dt 0.05 (the same scheme as the observatory) */
 #define L_X0 (-60.0)
 #define L_DX 0.1
-#define L_DT 0.05
-#define L_SUBSTEPS 4           /* one frame = four solver steps = 0.2 t */
+#define L_DT LINE_DT
+#define L_SUBSTEPS LINE_SUBSTEPS           /* one frame = four solver steps = 0.2 t */
 #define MOTOR 0.08             /* |eps| of the winding motor: a torque 2 pi eps = 0.50 on the turn */
 #define RAMP LINE_RAMP           /* a sudden torque rings the whole line; spinning up over one period of its slowest mode does not */
-#define CELL 0.30              /* charge at the start */
+#define CELL 0.10              /* charge at the start */
 #define DRAIN 0.005            /* charge per t while the motor runs */
-#define RED_LINE 0.30          /* the cell gauge turns red below this (a crisis in the bench) */
+#define RED_LINE LINE_RED_LINE  /* the cell gauge turns red below this (a crisis in the bench) */
 #define CRANK_CHARGE 0.15      /* Kit cranks a dry cell from her end, this much */
-#define CRANK_WAIT 3.0         /* t the motor stays dead while she cranks */
+#define CRANK_WAIT 8.0         /* t for a crank, a jam to clear, or a new turn to be wound; the solver keeps running */
 #define RELAUNCH_CHARGE 0.30   /* a lost turn: Ada winds a fresh one at the last mark and tops the cell up to this */
 #define PARK_DX 1.0            /* the catch arm reaches this far from the mark */
 #define PARK_V 0.08            /* and takes only a turn slower than this */
 #define PARK_T 0.6             /* standing on the mark, motor off, this long */
-#define LEG_LIMIT 200.0         /* t without a held mark: the turn is lost and relaunched */
+#define LEG_LIMIT LINE_LEG_LIMIT /* t without a held mark: the turn is lost and relaunched */
 #define RUNOFF 52.0            /* past this the turn runs off the end of the posts: lost */
-#define BASE_WOBBLE 0.10       /* absolute wobble of the speed readout with nobody reading the far end */
+#define BASE_WOBBLE 0.30       /* absolute wobble of the speed readout with nobody reading the far end */
 
 #define HUT_CELL 0.45          /* LE_HUT: Ada winds the cell past the line */
 #define CALL_WOBBLE 0.10       /* LE_HUT: Kit's call steadies the readout (wobble x0.10) */
@@ -30,19 +30,19 @@
 #define CHURCH_X 42.0          /* LE_ROUTE: the church bell */
 #define CHURCH_HOLD 8.0        /* LE_ROUTE: t the turn must stand on the church mark while the sexton cranks */
 #define SEXTON_CHARGE 0.20     /* LE_ROUTE: what the sexton cranks back up the line while his bell rings */
-#define BOARD_CHARGE 0.28      /* LE_BOARD: Kit's board cell */
+#define BOARD_CHARGE 0.45      /* LE_BOARD: Kit's board cell */
 #define SPILL_WOBBLE 0.03      /* LE_SPILL: extra readout wobble in leg 4 */
-#define SPILL_LEAK 0.006       /* LE_SPILL: charge the wet cell bleeds per t in leg 4, running or not */
-#define FORD_X 44.0            /* LE_FORD: the ford bell, past the water line */
-#define FORD_CHARGE 0.40       /* LE_FORD: the ferry house's cell, fed into the line while the bell rings */
+#define SPILL_LEAK 0.014       /* LE_SPILL: charge the wet cell bleeds per t in leg 4, running or not */
+#define FORD_X 49.0            /* LE_FORD: the ford bell, past the water line */
+#define FORD_CHARGE 0.40       /* LE_FORD: dry cell connected when the ford branch is chosen */
 #define FORD_HOLD 10.0         /* LE_FORD: t the turn must stay on the ford bell while it rings */
 #define FORD_FAST 0.15         /* LE_FORD: a turn faster than this strikes the bell's arm and jams the motor */
 #define KIT_FAST 0.30          /* a turn faster than this strikes Kit's catch arms (she takes the jolt) */
-#define SLACK 0.70            /* LE_CUT: the slack line slips on the drum: torque x0.70 */
-#define DAM_FAST 0.12          /* LE_CUT: Ada's old arm at the dam road jams under anything faster than this */
+#define SLACK 0.65            /* LE_CUT: the slack line slips on the drum: torque x0.65 */
+#define DAM_FAST 0.04          /* LE_CUT: Ada's old arm at the dam road jams under anything faster than this */
 
 /* Leg marks: 0 -> 18 (the weir) -> the bell (mill 30 or church 42; 36 with no route effect) -> 20 (the gorge)
- * -> 32 (the hill siren, or the ford bell at 46) -> -10 (the dam road, back up the line to Ada). */
+ * -> 32 (the hill siren, or the ford bell at 49) -> -10 (the dam road, back up the line to Ada). */
 static const double TARGET[L_LEGS] = {18.0, 36.0, 20.0, 32.0, -10.0};
 
 /* The spill, the ford and the cut get the screen to themselves: no "mark held" banner before or after. */
@@ -96,8 +96,8 @@ double line_wobble(const Line *l)
 
 double line_leak(const Line *l)
 {
-    /* The relay hut is taking water in leg 4; held on the ford bell, the ferry house's dry cell carries the motor. */
-    if (l->leg != 3 || !on(l, LE_SPILL) || l->held > 0.0) return 0.0;
+    /* The relay hut is taking water in leg 4; the ferry house's dry cell bypasses the wet cell on the ford branch. */
+    if (l->leg != 3 || !on(l, LE_SPILL) || l->held > 0.0 || (l->ford == 0 && on(l, LE_FORD))) return 0.0;
     return SPILL_LEAK;
 }
 
@@ -113,8 +113,8 @@ double line_hold_need(const Line *l)
     return l->leg == 3 && l->ford == 0 && on(l, LE_FORD) ? FORD_HOLD : 0.0;
 }
 
-/* Charge that comes up the line once a held mark starts ringing: the sexton's crank, or the ferry house's cell. */
-static double hold_charge(const Line *l) { return l->leg == 1 ? SEXTON_CHARGE : FORD_CHARGE; }
+/* The sexton cranks only once the church bell starts ringing. The ford cell was connected at branch selection. */
+static double hold_charge(const Line *l) { return l->leg == 1 ? SEXTON_CHARGE : 0.0; }
 
 int line_cue(const Line *l)
 {
@@ -174,7 +174,7 @@ static void clear_leg(Line *l)
 {
     static const int next[L_LEGS] = {LS_STONES, LS_BELL, LS_FORD, LS_CUT, LS_DAWN};
     int scene = next[l->leg];
-    /* The church's sexton winds his crank once his bell has rung, and sends the charge back up the line. */
+    /* The church charge was sent when its bell started ringing; the required held interval is now complete. */
     l->leg++;
     /* The heavy scenes and the ending get the screen to themselves: no "mark held" banner. */
     if (!line_heavy(scene) && scene != LS_DAWN) raise_banner(l, LB_HELD);
@@ -198,9 +198,10 @@ static void relaunch(Line *l)
     l->x = l->from_x;
     l->v = 0.0;
     l->leg_time = l->parked = l->held = 0.0;
-    l->drift = 0.0;
+    l->drift = CRANK_WAIT;
     l->refuel = 0;
     if (l->charge < RELAUNCH_CHARGE) l->charge = RELAUNCH_CHARGE;
+    l->lost++;
     fail(l, LB_LOST);
 }
 
@@ -261,13 +262,14 @@ void line_tick(Line *l, int frames, int command)
         if (near && fabs(l->v) > line_arm_limit(l) && !l->knocked && l->held <= 0.0) {
             l->knocked = 1;
             l->drift = CRANK_WAIT;
+            l->knocks++;
             fail(l, LB_KNOCK);
         }
         if (shook || fabs(l->x) > RUNOFF || l->leg_time > LEG_LIMIT) relaunch(l);
         /* While Kit's end is alive she cranks a dry cell where it is (the turn coasts meanwhile). After the cut nobody
          * can, and the turn is lost (LE_CUT). */
         else if (l->charge <= 0.0 && l->drift <= 0.0) {
-            if (l->count || !on(l, LE_CUT)) { l->drift = CRANK_WAIT; l->refuel = 1; fail(l, LB_DRY); }
+            if (l->count || !on(l, LE_CUT)) { l->drift = CRANK_WAIT; l->refuel = 1; l->dry++; fail(l, LB_DRY); }
             else relaunch(l);
         }
     }
@@ -297,6 +299,7 @@ int line_answer(Line *l, int option)
         break;
     case LS_FORD:
         l->ford = option;
+        if (option == 0 && on(l, LE_FORD)) l->charge += FORD_CHARGE;
         start_leg(l);
         break;
     case LS_CUT:

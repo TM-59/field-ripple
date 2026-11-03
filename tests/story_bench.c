@@ -41,7 +41,7 @@ static void play_row(char *buf, size_t cap, int i, const RunResult *r)
 
 static void ablation_row(char *buf, size_t cap, int i, const RunResult *r)
 {
-    snprintf(buf, cap, "{\"seed\": \"%d\", \"seconds\": %.2f, \"red\": %.2f}", i, r->seconds, r->red);
+    snprintf(buf, cap, "{\"seed\": \"%d\", \"seconds\": %.2f, \"fails\": %d, \"red\": %.2f}", i, r->seconds, r->fails, r->red);
 }
 
 static void tension_row(char *buf, size_t cap, int i, int run, const RunResult *r)
@@ -96,14 +96,30 @@ static void write_arm_pair(FILE *f, const char *name, const RunResult *res, int 
 }
 
 static const char *GEN = "tests/story_bench.c (make story)";
-static const char *POLICY =
-    "A relay keeper who reads the gauges, not the code: runs the motor towards the mark until the speed readout reaches "
-    "0.28-0.52 c, coasts, and brakes when a rule-of-thumb stopping distance worked out from the wobbling readout reaches "
-    "the mark (25 % late to 30 % early), 0-3 frames slow; it stops braking when the readout falls below 0.01-0.05 c, "
-    "then watches the position marker for 0.8-1.6 t: on the mark and still, it waits for the catch arm; still but off "
-    "the mark, it plans a slow second span; moving, it brakes again. While Kit calls the brake it brakes on her word. "
-    "On the ford bell it cuts the motor and waits. Its hand comes from the night's own stirred seed, re-drawn per leg. "
-    "Choices follow the path field.";
+/* Header texts. They are printed from the constants the code uses (line.h, line_policy.h), and story_bench --check
+ * requires each of them verbatim in the files, so a text that drifts from the code fails make test. */
+static void metric_texts(char *buf, size_t cap)
+{
+    snprintf(buf, cap,
+        "  \"metrics\": {\n"
+        "    \"seconds\": {\"better\": \"lower\", \"kind\": \"outcome\", \"felt\": \"screen\", \"label\": \"t on the night clock at first light (shown as the clock); every t is run through the solver (the held bells and a dry cell being cranked included, no flat additions)\"},\n"
+        "    \"fails\": {\"better\": \"lower\", \"kind\": \"outcome\", \"felt\": \"screen\", \"label\": \"failures in the night: a turn lost and relaunched at the last mark (it ran off the posts, wandered %.0f t, or the cell went dry after the cut), a dry cell Kit has to crank, or a catch arm struck and the motor jammed; each raises a failure banner and counts on the Failures counter\"},\n"
+        "    \"red\": {\"better\": \"lower\", \"kind\": \"resource\", \"felt\": \"resource\", \"label\": \"t run with the cell gauge in the red (charge below %.2f); a reading of the charge the beats change, not a play result\"}\n"
+        "  },\n",
+        LINE_LEG_LIMIT, LINE_RED_LINE);
+}
+
+static void tension_texts(char *buf, size_t cap)
+{
+    char policy[2048];
+    keeper_describe(policy, sizeof policy);
+    snprintf(buf, cap,
+        "  \"policy\": \"%s\",\n"
+        "  \"crisis\": \"the cell gauge in the red (charge below %.2f) at any moment in the leg, or a failure (a failure counts as a crisis)\",\n"
+        "  \"failure\": \"the cell ran dry (Kit cranks it, or after the cut the turn is lost), the turn ran off the posts or wandered "
+        "%.0f t without a held mark and was relaunched, or it struck a catch arm too fast and jammed the motor\",\n",
+        policy, LINE_RED_LINE, LINE_LEG_LIMIT);
+}
 
 static void run_all(RunResult *res, int np, int na)
 {
@@ -123,7 +139,7 @@ static int summary(void)
             RunResult x = run_job(ablation_job(a, i));
             s += x.seconds; r += x.red; f += x.fails; done += x.completed;
         }
-        printf("%-7s seconds %7.2f red %6.2f lost %5.2f done %d/%d\n", name[a], s / ABLATION_SEEDS, r / ABLATION_SEEDS,
+        printf("%-7s seconds %7.2f red %6.2f fails %5.2f done %d/%d\n", name[a], s / ABLATION_SEEDS, r / ABLATION_SEEDS,
                f / ABLATION_SEEDS, done, ABLATION_SEEDS);
     }
     double crisis[L_LEGS] = {0}; int zero = 0, done = 0, n = TENSION_SEEDS * TENSION_RUNS;
@@ -161,10 +177,9 @@ static int write_all(const char *dir)
     fprintf(f, "{\n  \"version\": 1,\n  \"generator\": \"%s\",\n  \"note\": \"Same %d seeds in every arm. on = all story numbers, the church bell and the hill siren; "
                "off = scenes still open but every story number is neutral; beats = only that scene's numbers removed; choices = one choice fixed per path, "
                "the other at its default. Do not edit by hand.\",\n", GEN, ABLATION_SEEDS);
-    fprintf(f, "  \"metrics\": {\n"
-               "    \"seconds\": {\"better\": \"lower\", \"kind\": \"outcome\", \"felt\": \"screen\", \"label\": \"t on the night clock at first light; every t is run through the solver (the ford bell's ring and a dry cell being cranked included, no flat additions)\"},\n"
-               "    \"red\": {\"better\": \"lower\", \"kind\": \"outcome\", \"felt\": \"screen\", \"label\": \"t run with the cell gauge in the red (below 0.25); an empty cell stops the motor and the turn coasts or is lost\"}\n"
-               "  },\n  \"effects\": {\n    \"on\": [\n");
+    char head[4096];
+    metric_texts(head, sizeof head);
+    fprintf(f, "%s  \"effects\": {\n    \"on\": [\n", head);
     write_rows(f, "      ", ab, ARM_ON);
     fprintf(f, "    ],\n    \"off\": [\n");
     write_rows(f, "      ", ab, ARM_OFF);
@@ -186,11 +201,9 @@ static int write_all(const char *dir)
 
     const RunResult *tn = res + np + na;
     f = open_out(dir, "tension.json");
-    fprintf(f, "{\n  \"version\": 1,\n  \"generator\": \"%s\",\n  \"policy\": \"%s\",\n", GEN, POLICY);
-    fprintf(f, "  \"crisis\": \"the cell gauge in the red (below 0.25) at any moment in the leg, or a failure (a failure counts as a crisis)\",\n"
-               "  \"failure\": \"the cell ran dry (Kit cranks it, or after the cut the turn is lost), the turn ran off the posts or wandered "
-               "70 t and was relaunched, or it struck the ford bell's arm\",\n"
-               "  \"segments\": [\"to the weir\", \"to the bell\", \"back to the gorge\", \"the water in the hut\", \"up to the dam road\"],\n"
+    tension_texts(head, sizeof head);
+    fprintf(f, "{\n  \"version\": 1,\n  \"generator\": \"%s\",\n%s", GEN, head);
+    fprintf(f, "  \"segments\": [\"to the weir\", \"to the bell\", \"back to the gorge\", \"the water in the hut\", \"up to the dam road\"],\n"
                "  \"note\": \"%d seeds x %d nights; every night has its own stirred seed; the path comes from the night number.\",\n  \"seeds\": [\n",
             TENSION_SEEDS, TENSION_RUNS);
     for (int i = 0; i < nt; i++) {
@@ -265,9 +278,15 @@ static int check(const char *dir)
             failures++;
         }
     }
+    /* [text] the descriptions in the files are the ones printed from the code's constants today. */
+    char text[4096];
+    metric_texts(text, sizeof text);
+    if (!strstr(abl, text)) { fputs("[text] ablation.json metric labels do not match the code's constants\n", stderr); failures++; }
+    tension_texts(text, sizeof text);
+    if (!strstr(ten, text)) { fputs("[text] tension.json policy/crisis/failure do not match the code's constants\n", stderr); failures++; }
     free(play); free(abl); free(ten);
     if (failures) { fprintf(stderr, "story bench check: %d failure(s); run make story to regenerate\n", failures); return 1; }
-    puts("story bench check: 8 re-run rows match docs/narrative; all run seeds distinct");
+    puts("story bench check: 8 re-run rows and the metric/policy texts match docs/narrative; all run seeds distinct");
     return 0;
 }
 

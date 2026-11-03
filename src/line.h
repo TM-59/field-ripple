@@ -16,6 +16,11 @@
 
 enum { L_LEGS = 5 };
 #define LINE_RAMP 6.283185307179586  /* t the motor takes to spin from stopped to full (one period of the line's slowest ringing) */
+#define LINE_DT 0.05
+#define LINE_SUBSTEPS 4
+#define LINE_FRAME (LINE_DT * LINE_SUBSTEPS)       /* t per frame: four solver steps of 0.05 t */
+#define LINE_RED_LINE 0.30   /* the cell gauge turns red below this charge */
+#define LINE_LEG_LIMIT 200.0 /* t on one leg without a held mark: the turn is lost and relaunched */
 
 enum {
     LS_NONE = -1,
@@ -58,13 +63,14 @@ typedef struct {
     double leg_time;
     double x, v;          /* the turn's position and its speed over the last frame */
     double parked;        /* t the turn has stood still on the mark with the motor off */
-    double held;          /* t the turn has been held on the ford bell */
+    double held;          /* t the turn has been held on a ringing church or ford bell */
     double drift;         /* t left until the motor turns again (a dry cell being cranked, a jammed arm) */
     int refuel;           /* the drift ends with Kit's crank charge (a dry cell), not just a freed arm */
-    int knocked;          /* the ford bell's arm was struck once this leg */
+    int knocked;          /* the catch arm was struck once this leg */
     double charge, red;   /* cell charge; t run with the cell gauge in the red */
     double from_x, target_x;
     int fails;
+    int lost, dry, knocks;    /* fails by kind: turns lost and relaunched, dry cells cranked, catch arms struck */
     int fails_leg[L_LEGS];
     int crisis_leg[L_LEGS];   /* 1 if the cell dropped below the red line or the leg had a failure */
     int banner;           /* LB_* shown on screen */
@@ -95,7 +101,7 @@ int line_heavy(int scene);
 int line_ending(const Line *l);
 /* Absolute wobble of the speed readout right now (0 when the night is over). */
 double line_wobble(const Line *l);
-/* t the turn must be held on the mark before the leg ends (the ford bell); 0 for an ordinary leg. */
+/* t the turn must be held on the church or ford bell before the leg ends; 0 for an ordinary leg. */
 double line_hold_need(const Line *l);
 /* Fastest a turn may meet the catch arm on the mark before it jams the motor. */
 double line_arm_limit(const Line *l);
