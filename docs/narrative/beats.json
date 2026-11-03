@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "arc": "Man in a hole: the last calm hour at the relay hut (0, quiet), the river at the second stone and a choice of bells (-1), the bell rings and the low road goes up the hill (+2, a false peak), the spillway goes over a month early (-2), the late bus with the choir is out on the ford road (-3), the lower posts go under and Kit's end of the line goes quiet (-3, the bottom), first light (+1, bittersweet).",
-  "note": "Scenes open in src/line.c at fixed progress points (the start of the night and the end of each of the five legs); the words are in web/app.mjs. The solver in src/field.c is unchanged; story beats change only the charge in the motor's cell, which mark is next, how much the speed readout wobbles, a cell that bleeds in the wet and what a lost turn costs. The actual order per seed is in play-order.json, story numbers on/off and per choice path in ablation.json, per-leg crises and failures in tension.json, all written by make story. tests/test_line.c checks the order, every [mech] number, the [quiet] heavy scenes (spill, ford, cut) and both choices; make test re-runs bench rows and requires them verbatim. Emotion values are the author's self-scoring.",
+  "arc": "Man in a hole: the last calm hour at the relay hut (0, quiet), the river at the second stone and a choice of bells (-1), the bell rings and the low road goes up the hill (+2, a false peak), the spillway goes over a month early (-2), the late bus with the choir is out on the ford road (-2), the lower posts go under and Kit's end of the line goes quiet (-3, the bottom), first light (+1, bittersweet).",
+  "note": "Scenes open in src/line.c at fixed progress points (the start of the night and the end of each of the five legs); the words are in web/app.mjs. The solver in src/field.c is unchanged; story beats change only the charge in the motor's cell, which mark is next, how much the speed readout wobbles, a cell that bleeds in the wet and what a lost turn costs. The actual order per seed is in play-order.json, story numbers on/off and per choice path in ablation.json, per-leg crises and failures in tension.json, all written by make story. tests/test_line.c checks the order, every [mech] number, the [quiet] heavy scenes (spill, ford, cut) and both choices; make test re-runs bench rows and requires them verbatim. Emotion values are the author's, re-scored by an independent reviewer on 2026-11-03 (ford: fear, -2, cost; cut: intensity 3).",
   "characters": [
     {
       "id": "ada",
@@ -112,11 +112,11 @@
       "id": "ford",
       "chapter": 4,
       "summary": "The late bus is not back. The ford bell's post is under the water line; a turn can reach it, but it must stand on the low arm while the bell rings (the ferry house's cell comes up the line meanwhile). Or ring the hill siren on dry posts and keep the line for the town. Kit: twenty-two kids. Ada: I can count.",
-      "valence": -3,
+      "valence": -2,
       "intensity": 3,
-      "emotion": "sorrow",
+      "emotion": "fear",
       "tags": [
-        "loss",
+        "cost",
         "choice"
       ],
       "irreversible": true,
@@ -149,7 +149,7 @@
       "chapter": 5,
       "summary": "The river takes the lower posts. Kit's voice breaks off and her catch arm is gone: nobody steadies the speed needle, the slack line slips on the drum, Ada's old arm at the dam road jams under a fast turn, and a dry cell means the turn coasts off and is lost. You say the rule to an empty wire.",
       "valence": -3,
-      "intensity": 2,
+      "intensity": 3,
       "emotion": "sorrow",
       "tags": [
         "loss",
