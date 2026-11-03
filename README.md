@@ -8,6 +8,24 @@ The browser observatory uses the same C solver, with live field and energy-densi
 
 ![Observatory entrance with the original laboratory illustration](docs/images/title.jpg)
 
+## The Flood Line
+
+The Turn Line is a mile of pendulums on a wire coupled by torsion springs, the mechanical model of the sine-Gordon equation: a full turn of the chain (the kink) runs along it like a particle, and a winding motor puts the same torque on every pendulum (the bias `ε`). Tonight the river is rising. You keep the relay hut in the middle of the line and carry five turns between the marks; each turn that stands still on a mark rings that mark's bell. Ada keeps the dam hut at the top, Kit the catch arms at Lowfield at the bottom.
+(洪水の夜、振り子の鎖 = sine-Gordon の力学模型で、turn(キンク)を 5 回、印まで運んで止める物語の層。)
+
+- Hold **→ / D** (down the valley) or **← / A** (up the valley). The motor takes one period of the line's slowest ringing (2π t) to spin up and down, so you brake early. Bring the turn to the green mark and let it stand still with the motor off.
+- The cell drains while the motor turns. In the red it is a crisis; empty, the motor stops (Kit cranks it, or later the turn is lost and Ada winds a fresh one).
+- Two choices change the night: the mill bell or the church bell, and the ford bell or the hill siren. Each trades time for charge, and the second decides the ending.
+- `src/line.c` sits on top of the unchanged `src/field.c`. Story scenes change only game numbers (charge, the next mark, how much the speed needle wobbles, a wet cell's leak, what a lost turn costs, the drum's torque). The words are in `web/app.mjs`; the beat sheet is `docs/narrative/beats.json`.
+
+![A turn on its way to the mill mark](docs/images/line-play.jpg)
+![The choice of bells](docs/images/line-choice.jpg)
+![The lower posts go under: a heavy scene on a dark panel with no banner](docs/images/line-bottom.jpg)
+![First light after the ford bell](docs/images/line-ending-ford.jpg)
+![Upright phone, touch only](docs/images/line-mobile.jpg)
+
+`make story` runs 396 nights with a keeper who reads only the gauges and writes `docs/narrative/{play-order,ablation,tension}.json`; `make test` checks the scene order, every story number, the quiet heavy scenes and both choices, and re-runs bench rows that must appear byte for byte. Generate and check them in the Dockerfile's Debian 13 toolchain (CI runs `docker build .`).
+
 ## Run
 
 ```sh
@@ -27,7 +45,7 @@ make web                       # builds dist/; enforces a 10,000,000-byte total 
 make play                      # serves the local observatory; open the printed address
 ```
 
-Choose an initial speed and press **Resume**, or hold **A / D**, **← / →**, or the on-screen force buttons. Release to coast; push in the opposite direction to brake. **Space** pauses (on a focused button it activates that button); **R** resets. Changing the initial speed resets and pauses the observation. All units are dimensionless, with `c = 1`. The view follows the kink; the position strip shows its location in the full domain.
+The page opens on The Flood Line; **Free observation** opens the original observatory. There, choose an initial speed and press **Resume**, or hold **A / D**, **← / →**, or the on-screen force buttons. Release to coast; push in the opposite direction to brake. **Space** pauses (on a focused button it activates that button); **R** resets. Changing the initial speed resets and pauses the observation. All units are dimensionless, with `c = 1`. The view follows the kink; the position strip shows its location in the full domain.
 
 The browser observation stops at `|x| ≥ 75` or `t ≥ 120`, before the kink reaches the finite grid edge. Reset to continue with a new observation. Focus loss pauses and releases held inputs. No save data, random numbers, external fonts or external requests are used.
 
@@ -75,7 +93,7 @@ npx playwright install chromium
 make smoke
 ```
 
-The smoke check uses real keyboard and touch input under a non-root URL path, checks numerical results, pause/reset/focus loss, observation limits, missing-art fallback and external requests, and refreshes the four observatory screenshots. CI runs only native C unit tests on pull requests. Human first-use feedback, physical mobile devices and other browser engines are **unverified / 未検証**. This change does not deploy or submit the application.
+The smoke check uses real keyboard and touch input under a non-root URL path, checks numerical results, pause/reset/focus loss, observation limits, missing-art fallback and external requests, runs two whole Flood Line nights with real keys (both endings, heavy scenes with no banner), checks phone sizes upright and sideways (words 14 CSS px or more, targets 44 px or more, the plot over half the screen), and refreshes the screenshots. CI runs only `docker build .` (make test and make plots) on pull requests. Human first-use feedback, physical mobile devices and other browser engines are **unverified / 未検証**. This change does not deploy or submit the application.
 
 ## Roadmap
 

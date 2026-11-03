@@ -1,1 +1,7 @@
 .git
+node_modules
+dist
+out
+.scratch
+.sweep
+.story-check

@@ -103,6 +103,78 @@ try {
   await page.locator('#reset').click();assert.equal((await inspect(page)).time,0);
   assert.equal((await inspect(page)).stopped,false);checks.push('finite-domain limit stops and explains completion; reset recovers');
 
+  // The Flood Line: two whole nights with real keys and clicks, one per ending. A simple driver reads only what the
+  // page shows (the speed needle after spin-down and the distance to the mark) and holds A / D.
+  const line=page=>page.evaluate(()=>window.lineView);
+  async function night(route,ford,shots){
+    const p=await browser.newPage({viewport:{width:1280,height:900}});track(p);
+    await p.goto(url+'?rate=3');await p.waitForFunction(()=>!document.getElementById('line-start').disabled);
+    await p.locator('#line-start').click();
+    const seen=[],quiet=[];let held=null,heavyOpen=null,legShot=false;
+    const deadline=Date.now()+170000;
+    for(;;){
+      assert(Date.now()<deadline,'night did not finish');
+      const v=await line(p);
+      if(v.scene){
+        if(held){await p.keyboard.up(held);held=null;}
+        if(seen.at(-1)!==v.scene)seen.push(v.scene);
+        if(['spill','ford','cut'].includes(v.scene)){assert(!v.bannerShown,`banner over ${v.scene}`);heavyOpen=v.scene;}
+        if(v.scene==='stones'&&shots)await shot(p,'line-choice');
+        if(v.scene==='cut'&&shots)await shot(p,'line-bottom');
+        if(v.scene==='dawn'){if(shots)await shot(p,ford?'line-ending-siren':'line-ending-ford');break;}
+        const option=v.scene==='stones'?route:v.scene==='ford'?ford:0;
+        await p.locator('#scene-options button').nth(option).click();
+        if(heavyOpen){
+          // The first moments after a heavy scene: no "mark held" banner.
+          for(let k=0;k<4;k++){const w=await line(p);assert(!/MARK HELD/.test(w.bannerShown?w.bannerText:''));await p.waitForTimeout(60);}
+          quiet.push(heavyOpen);heavyOpen=null;
+        }
+        continue;
+      }
+      if(shots&&!legShot&&v.leg===1&&Math.abs(v.remaining)<8){await shot(p,'line-play');legShot=true;}
+      const dir=v.remaining>=0?1:-1,dist=Math.abs(v.remaining),speed=v.coastV*dir;
+      const aim=dist<0.8?0:Math.min(0.42,0.22*Math.sqrt(Math.max(0,dist-0.8)));
+      const want=speed<aim-0.04?(dir>0?'d':'a'):speed>aim+0.04?(dir>0?'a':'d'):null;
+      if(want!==held){if(held)await p.keyboard.up(held);if(want)await p.keyboard.down(want);held=want;}
+      await p.waitForTimeout(40);
+    }
+    const v=await line(p);await p.close();
+    return {seen,quiet,ending:v.sceneText,fails:v.fails,time:v.time};
+  }
+  const nightA=await night(1,0,true),nightB=await night(0,1,true);
+  for(const n of [nightA,nightB]){
+    assert.deepEqual(n.seen,['hut','stones','bell','spill','ford','cut','dawn']);
+    assert.deepEqual(n.quiet,['spill','ford','cut']);
+  }
+  assert(/heard a bell where no bell should be/.test(nightA.ending)&&/never rang/.test(nightB.ending));
+  checks.push(`flood line: two nights with real keys (church + ford bell, ${nightA.time.toFixed(0)} t, ${nightA.fails} lost; mill + siren, ${nightB.time.toFixed(0)} t, ${nightB.fails} lost); 7 scenes in order, both endings, heavy scenes with no banner`);
+
+  // Phone, upright and sideways: touch only. Words 14 CSS px or more, targets 44 px or more, the plot over half the screen.
+  for(const [w,h,name] of [[375,812,'line-mobile'],[812,375,null]]){
+    const ctx=await browser.newContext({viewport:{width:w,height:h},deviceScaleFactor:2,isMobile:true,hasTouch:true});
+    const p=await ctx.newPage();track(p);await p.goto(url);
+    await p.waitForFunction(()=>!document.getElementById('line-start').disabled);
+    await p.locator('#line-start').tap();await p.locator('#scene-options button').first().tap();
+    const b=await p.locator('[data-motor=down]').boundingBox();const cdp=await ctx.newCDPSession(p);
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:b.x+b.width/2,y:b.y+b.height/2,id:1,radiusX:3,radiusY:3,force:1}]});
+    await p.waitForTimeout(2500);
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    await p.waitForTimeout(600);
+    const v=await line(p);assert(v.x>0.3&&v.v>0.05,'touch did not move the turn');
+    const m=await p.evaluate(()=>{
+      const small=[],tiny=[];
+      const vis=e=>{const r=e.getBoundingClientRect();const st=getComputedStyle(e);return r.width>0&&r.height>0&&st.visibility!=='hidden'&&r.bottom>0&&r.top<innerHeight;};
+      for(const e of document.querySelectorAll('body *')){if(!vis(e))continue;for(const n of e.childNodes)if(n.nodeType===3&&n.textContent.trim()&&parseFloat(getComputedStyle(e).fontSize)<14)small.push(n.textContent.trim().slice(0,20));}
+      for(const e of document.querySelectorAll('button,a[href],input,select')){if(!vis(e))continue;const r=e.getBoundingClientRect();if(r.width<44||r.height<44)tiny.push(e.id||e.textContent.trim().slice(0,20));}
+      const c=document.getElementById('line-plot').getBoundingClientRect();
+      return {small,tiny,area:Math.min(c.width,innerWidth)*Math.min(c.height,innerHeight)/(innerWidth*innerHeight),overflow:document.documentElement.scrollWidth>innerWidth};
+    });
+    assert.deepEqual(m.small,[]);assert.deepEqual(m.tiny,[]);assert(m.area>=0.5,`plot share ${m.area}`);assert(!m.overflow);
+    if(name)await shot(p,name);
+    await ctx.close();
+    checks.push(`${w}x${h} touch: hold moves the turn; words >=14 px, targets >=44 px, plot ${(m.area*100).toFixed(0)} % of the screen`);
+  }
+
   const fallback=await browser.newPage({viewport:{width:1280,height:900}});track(fallback,{fallback:true});
   await fallback.route('**/assets/**',route=>route.fulfill({status:404,body:''}));
   await fallback.goto(url);await fallback.waitForFunction(()=>window.fieldView);
@@ -113,7 +185,7 @@ try {
   assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);assert.deepEqual(failedResponses,[]);assert.deepEqual(external,[]);
   checks.push('page errors 0; console errors 0; unexpected HTTP failures 0; external requests 0');
   const images=[];
-  for(const name of ['before.png','title.jpg','coasting.jpg','contracted.jpg','mobile.jpg']) {
+  for(const name of ['before.png','title.jpg','coasting.jpg','contracted.jpg','mobile.jpg','line-play.jpg','line-choice.jpg','line-bottom.jpg','line-ending-ford.jpg','line-ending-siren.jpg','line-mobile.jpg']) {
     const file=`docs/images/${name}`;images.push({file,bytes:(await stat(file)).size});
   }
   const summary={checks,errors,consoleErrors,failedResponses,externalRequests:external,images};

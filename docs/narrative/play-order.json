@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "generator": "tests/story_bench.c (make story)",
+  "note": "Scenes open at fixed progress points: the start of the night and the end of a leg. stones 0 = the mill bell, 1 = the church bell; ford 0 = the ford bell, 1 = the hill siren. quiet lists the heavy scenes shown with no 'mark held' banner raised before the next frame of the line. Do not edit by hand.",
+  "seeds": [
+    {"seed": "0", "choices": {"stones": 0, "ford": 0}, "order": ["hut", "stones", "bell", "spill", "ford", "cut", "dawn"], "won": true, "ending": "end-ford", "quiet": ["spill", "ford", "cut"]},
+    {"seed": "1", "choices": {"stones": 1, "ford": 0}, "order": ["hut", "stones", "bell", "spill", "ford", "cut", "dawn"], "won": true, "ending": "end-ford", "quiet": ["spill", "ford", "cut"]},
+    {"seed": "2", "choices": {"stones": 0, "ford": 1}, "order": ["hut", "stones", "bell", "spill", "ford", "cut", "dawn"], "won": true, "ending": "end-siren", "quiet": ["spill", "ford", "cut"]},
+    {"seed": "3", "choices": {"stones": 1, "ford": 1}, "order": ["hut", "stones", "bell", "spill", "ford", "cut", "dawn"], "won": true, "ending": "end-siren", "quiet": ["spill", "ford", "cut"]},
+    {"seed": "4", "choices": {"stones": 0, "ford": 0}, "order": ["hut", "stones", "bell", "spill", "ford", "cut", "dawn"], "won": true, "ending": "end-ford", "quiet": ["spill", "ford", "cut"]},
+    {"seed": "5", "choices": {"stones": 1, "ford": 0}, "order": ["hut", "stones", "bell", "spill", "ford", "cut", "dawn"], "won": true, "ending": "end-ford", "quiet": ["spill", "ford", "cut"]},
+    {"seed": "6", "choices": {"stones": 0, "ford": 1}, "order": ["hut", "stones", "bell", "spill", "ford", "cut", "dawn"], "won": true, "ending": "end-siren", "quiet": ["spill", "ford", "cut"]},
+    {"seed": "7", "choices": {"stones": 1, "ford": 1}, "order": ["hut", "stones", "bell", "spill", "ford", "cut", "dawn"], "won": true, "ending": "end-siren", "quiet": ["spill", "ford", "cut"]},
+    {"seed": "8", "choices": {"stones": 0, "ford": 0}, "order": ["hut", "stones", "bell", "spill", "ford", "cut", "dawn"], "won": true, "ending": "end-ford", "quiet": ["spill", "ford", "cut"]},
+    {"seed": "9", "choices": {"stones": 1, "ford": 0}, "order": ["hut", "stones", "bell", "spill", "ford", "cut", "dawn"], "won": true, "ending": "end-ford", "quiet": ["spill", "ford", "cut"]},
+    {"seed": "10", "choices": {"stones": 0, "ford": 1}, "order": ["hut", "stones", "bell", "spill", "ford", "cut", "dawn"], "won": true, "ending": "end-siren", "quiet": ["spill", "ford", "cut"]},
+    {"seed": "11", "choices": {"stones": 1, "ford": 1}, "order": ["hut", "stones", "bell", "spill", "ford", "cut", "dawn"], "won": true, "ending": "end-siren", "quiet": ["spill", "ford", "cut"]}
+  ]
+}
