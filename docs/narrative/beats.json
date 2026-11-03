@@ -1,0 +1,214 @@
+{
+  "version": 1,
+  "arc": "Man in a hole: the last calm hour at the relay hut (0, quiet), the river at the second stone and a choice of bells (-1), the bell rings and the low road goes up the hill (+2, a false peak), the spillway goes over a month early (-2), the late bus with the choir is out on the ford road (-3), the lower posts go under and Kit's end of the line goes quiet (-3, the bottom), first light (+1, bittersweet).",
+  "note": "Scenes open in src/line.c at fixed progress points (the start of the night and the end of each of the five legs); the words are in web/app.mjs. The solver in src/field.c is unchanged; story beats change only the charge in the motor's cell, which mark is next, how much the speed readout wobbles, a cell that bleeds in the wet and what a lost turn costs. The actual order per seed is in play-order.json, story numbers on/off and per choice path in ablation.json, per-leg crises and failures in tension.json, all written by make story. tests/test_line.c checks the order, every [mech] number, the [quiet] heavy scenes (spill, ford, cut) and both choices; make test re-runs bench rows and requires them verbatim. Emotion values are the author's self-scoring.",
+  "characters": [
+    {
+      "id": "ada",
+      "want": "keep the line turning until the town is on the hill",
+      "need": "to come down off the dam herself",
+      "start": "will not leave the dam hut while a turn is on the line",
+      "end": "walks down the dam road with her crank on her back once the last turn reaches her mark"
+    },
+    {
+      "id": "kit",
+      "want": "everyone off the low road, the late bus first",
+      "need": "to wait for what she cannot reach",
+      "start": "talks over everyone, sure the line can carry anything",
+      "end": "loses her end of the line to the river and has to wait at the hill road for whatever comes back"
+    }
+  ],
+  "beats": [
+    {
+      "id": "hut",
+      "chapter": 1,
+      "summary": "Ten at night at the relay hut. Ada winds the cell past the red line with the hut's last charge, sets the rule (one push to send, one to stop), and Kit takes the catch arm at the far end and promises to shout when a turn comes in too fast, which steadies the speed needle (wobble x0.10).",
+      "valence": 0,
+      "intensity": 1,
+      "emotion": "fear",
+      "tags": [
+        "reward",
+        "quiet"
+      ],
+      "setup": [
+        "s-rule"
+      ],
+      "mechanism": {
+        "state": "LE_HUT",
+        "test": "[mech] hut"
+      },
+      "evidence": "A third push is charge you haven't got."
+    },
+    {
+      "id": "stones",
+      "chapter": 2,
+      "summary": "The river is at the second stone. The low road is full of carts, and the late bus brings the choir home over the ford at one. The mill bell is a short span; the church bell is a long one, and the turn has to stand on it while the sexton cranks charge back up the line.",
+      "valence": -1,
+      "intensity": 2,
+      "emotion": "fear",
+      "tags": [
+        "choice",
+        "cost"
+      ],
+      "setup": [
+        "s-ford",
+        "s-hale"
+      ],
+      "choice": {
+        "options": 2,
+        "changes": [
+          "bell"
+        ],
+        "labels": [
+          "Ring the mill bell (short span)",
+          "Ring the church bell (long span, the sexton cranks back)"
+        ]
+      },
+      "mechanism": {
+        "state": "route",
+        "test": "[mech] stones"
+      },
+      "evidence": "the late bus brings the choir home over the ford at one"
+    },
+    {
+      "id": "bell",
+      "chapter": 2,
+      "summary": "The bell rings and the carts turn up the hill past the quarry. Kit takes the cell out of her board and puts it into the line; with it, the cell spends less time in the red once the night turns wet.",
+      "valence": 2,
+      "intensity": 2,
+      "emotion": "joy",
+      "tags": [
+        "reward",
+        "peak"
+      ],
+      "mechanism": {
+        "state": "LE_BOARD",
+        "test": "[mech] bell"
+      },
+      "evidence": "the whole low road is turning up the hill past the quarry"
+    },
+    {
+      "id": "spill",
+      "chapter": 3,
+      "summary": "The spillway goes over a month before the council said it would. Kit shouts at the men who promised May; Ada sends the next turn back up to the gorge and warns that when the water reaches the hut the cell will bleed and the speed needle will shake.",
+      "valence": -2,
+      "intensity": 3,
+      "emotion": "anger",
+      "tags": [
+        "punishment",
+        "twist"
+      ],
+      "mechanism": {
+        "state": "LE_SPILL",
+        "test": "[mech] spill"
+      },
+      "presentation": {
+        "quiet": true,
+        "test": "[quiet] spill"
+      },
+      "evidence": "They stood on the bridge and said May!"
+    },
+    {
+      "id": "ford",
+      "chapter": 4,
+      "summary": "The late bus is not back. The ford bell's post is under the water line; a turn can reach it, but it must stand on the low arm while the bell rings (the ferry house's cell comes up the line meanwhile). Or ring the hill siren on dry posts and keep the line for the town. Kit: twenty-two kids. Ada: I can count.",
+      "valence": -3,
+      "intensity": 3,
+      "emotion": "sorrow",
+      "tags": [
+        "loss",
+        "choice"
+      ],
+      "irreversible": true,
+      "payoff": [
+        "s-ford"
+      ],
+      "choice": {
+        "options": 2,
+        "changes": [
+          "cut",
+          "dawn"
+        ],
+        "labels": [
+          "Send it down to the ford bell (past the water line, then hold it while the bell rings)",
+          "Ring the hill siren (dry posts, the town hears it)"
+        ]
+      },
+      "mechanism": {
+        "state": "ford",
+        "test": "[mech] ford"
+      },
+      "presentation": {
+        "quiet": true,
+        "test": "[quiet] ford"
+      },
+      "evidence": "There are twenty-two kids on that bus."
+    },
+    {
+      "id": "cut",
+      "chapter": 5,
+      "summary": "The river takes the lower posts. Kit's voice breaks off and her catch arm is gone: nobody steadies the speed needle, the slack line slips on the drum, Ada's old arm at the dam road jams under a fast turn, and a dry cell means the turn coasts off and is lost. You say the rule to an empty wire.",
+      "valence": -3,
+      "intensity": 2,
+      "emotion": "sorrow",
+      "tags": [
+        "loss",
+        "quiet"
+      ],
+      "irreversible": true,
+      "payoff": [
+        "s-rule"
+      ],
+      "mechanism": {
+        "state": "LE_CUT",
+        "test": "[mech] cut"
+      },
+      "presentation": {
+        "quiet": true,
+        "test": "[quiet] cut"
+      },
+      "evidence": "The voice wire hums. Nobody shouts the brake."
+    },
+    {
+      "id": "dawn",
+      "chapter": 5,
+      "summary": "First light. Ada comes down the dam road with her crank on her back. The ending depends on which bell you rang at one.",
+      "valence": 1,
+      "intensity": 2,
+      "emotion": "relief",
+      "tags": [
+        "quiet"
+      ],
+      "payoff": [
+        "s-hale"
+      ],
+      "evidence": "Ada comes down the dam road at five with her crank on her back."
+    }
+  ],
+  "endings": [
+    {
+      "id": "end-ford",
+      "when": {
+        "ford": 0
+      },
+      "text": [
+        "First light. The late bus is parked on the hill road with twenty-two coats drying over its seats.",
+        "Mr Hale says he heard a bell where no bell should be, out in the brown water, and turned round at the ford.",
+        "Ada comes down the dam road at five with her crank on her back.",
+        "The ford bell went under with the lower posts. Kit sits on the bus step and asks who is going to cast another."
+      ]
+    },
+    {
+      "id": "end-siren",
+      "when": {
+        "ford": 1
+      },
+      "text": [
+        "First light. The town spent the night on the hill, and the siren is still going because nobody has thought to stop it.",
+        "The bus comes in at noon by the quarry road. Mr Hale waited all night in the chapel at the ford for a bell that never rang; the choir slept in the pews.",
+        "Ada comes down the dam road at five with her crank on her back.",
+        "Kit walks down the hill to meet the bus and doesn't say anything for a long time."
+      ]
+    }
+  ]
+}

@@ -8,3 +8,8 @@ out/
 node_modules/
 __pycache__/
 .env
+test_line
+story_bench
+.story-check/
+.scratch/
+.sweep/

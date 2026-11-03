@@ -14,21 +14,40 @@
     <span class="edition">01 / FIELD OBSERVATORY</span>
   </header>
   <main>
-    <section id="entry" class="entry" aria-labelledby="entry-title">
-      <div class="entry-copy">
-        <p class="eyebrow">A PARTICLE MADE OF A FIELD</p>
-        <h1 id="entry-title">Push a ripple.<br>Watch space<br><em>draw it tighter.</em></h1>
-        <p class="intro">A travelling kink in a sine-Gordon field behaves like a relativistic particle. Give it a push and watch its width shrink as its speed approaches light.</p>
-        <button id="start" class="primary" disabled>Preparing the observatory…</button>
-        <p id="load-status" role="status">Loading the field.</p>
+    <section id="line" aria-labelledby="line-title">
+      <div class="line-stage">
+        <canvas id="line-plot" role="img" aria-label="The Flood Line. Top: the field around the turn, phi in radians and energy density. Bottom: the whole line with its marks, the next mark in green and the turn as a cyan dot."></canvas>
+        <div class="line-top"><p id="line-leg" class="eyebrow">LEG 1 / 5</p><h1 id="line-title">The Flood Line</h1><p id="line-goal" role="status">Bring the turn to the weir mark.</p><p id="line-call" aria-live="polite"></p></div>
+        <span id="line-banner" hidden></span>
+        <section id="welcome" aria-labelledby="welcome-title">
+          <p class="eyebrow">A PARTICLE MADE OF A FIELD · THE FLOOD LINE</p>
+          <h2 id="welcome-title">One night. Five turns of the line.</h2>
+          <p class="intro">The Turn Line is a mile of pendulums on a wire, the mechanical model of the sine-Gordon field. A full turn of the chain runs along it like a particle. Tonight the river is rising, and each turn you park on a mark rings that mark's bell.</p>
+          <div class="entry-buttons"><button id="line-start" class="primary" disabled>Start the night →</button><button id="start" disabled>Free observation</button></div>
+          <p id="load-status" role="status">Loading the field.</p>
+          <p class="entry-caption">Background: original concept art of an imagined laboratory. The plots are computed measurements.</p>
+        </section>
+        <section id="scene" hidden aria-labelledby="scene-title" aria-live="polite"><h2 id="scene-title"></h2><div id="scene-text"></div><div id="scene-options"></div></section>
       </div>
-      <div class="entry-caption"><span class="caption-rule"></span>THE OBSERVATORY <span>Original concept art · an imagined laboratory</span></div>
-      <div class="entry-foot"><span>1 + 1 DIMENSIONS</span><span>φ<sub>tt</sub> = φ<sub>xx</sub> − sin φ + ε</span><span>DIMENSIONLESS · c = 1</span></div>
+      <div class="line-side">
+        <div class="line-controls" aria-label="Winding motor"><button data-motor="up" class="hold" aria-label="Hold to run the motor up the valley">← <span>Up the valley</span></button><button data-motor="down" class="hold" aria-label="Hold to run the motor down the valley">→ <span>Down the valley</span></button></div>
+        <dl class="line-data">
+          <div id="cell-row" data-red="false"><dt>Cell</dt><dd id="l-charge">0.30</dd><i class="cell-gauge"><i id="cell-bar"></i><i id="cell-red"></i></i></div>
+          <div><dt>Speed, read <small>c</small></dt><dd id="l-speed">0.000</dd></div>
+          <div><dt>To the mark</dt><dd id="l-remaining">0.0</dd></div>
+          <div><dt>Motor</dt><dd id="l-motor">stopped</dd></div>
+          <div><dt>Night clock <small>t</small></dt><dd id="l-clock">0</dd></div>
+          <div><dt>In the red <small>t</small></dt><dd id="l-red">0</dd></div>
+          <div><dt>Lost turns</dt><dd id="l-lost">0</dd></div>
+        </dl>
+        <div class="line-transport"><button id="line-pause">Pause</button><button id="line-restart">Restart the night</button><button id="line-leave">Leave</button></div>
+        <p class="line-help">Hold ← / → (or A / D). Space pauses. Units: c = 1; the solver is the same C as the observatory.</p>
+      </div>
     </section>
     <section id="observatory" hidden aria-labelledby="lab-title">
       <div class="lab-heading">
         <div><p class="eyebrow">EXPERIMENT 01 / SINE-GORDON</p><h1 id="lab-title">The travelling kink</h1><p>One field. Two vacua. A particle between them.</p></div>
-        <div class="live-state"><span id="status-lamp"></span><span id="state-label" role="status">Paused</span></div>
+        <div class="lab-actions"><button id="back-line">← The flood line</button><div class="live-state"><span id="status-lamp"></span><span id="state-label" role="status">Paused</span></div></div>
       </div>
       <div class="workspace">
         <section class="instrument" aria-label="Field measurements">
