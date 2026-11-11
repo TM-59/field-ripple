@@ -3,6 +3,9 @@
 Push a sine-Gordon kink with a field and watch it behave like a relativistic particle. A C11 scalar field theory in 1+1 dimensions, `φ_tt = φ_xx − sin φ`, a standard toy model that shares its structure with quantum field theory.
 (C言語の1+1次元スカラー場シミュレータ。場の孤立波(キンク)を押して、ローレンツ収縮と速度の上限を観察します。)
 
+**Theory handbook:** [docs/theory](docs/theory/README.md) states every law, numerical rule and game rule the code relies on (26 statements), each with a figure, the function that implements it and the test or measurement that checks it. `make theory-figs` regenerates the figures from the solver; `make theory-check` verifies the coverage table.
+(理論の手引き: コードが拠る法則・数値計算の規則・ゲームの規則を、図・実装箇所・検査とともに `docs/theory` にまとめています。)
+
 The browser observatory uses the same C solver, with live field and energy-density plots, a stationary reference curve, keyboard/touch forces and an original illustrated laboratory.
 (同じ C の計算をブラウザーでも実行し、場・エネルギー密度・ローレンツ収縮を実測表示します。)
 

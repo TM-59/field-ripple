@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" width="720" height="400" font-family="sans-serif" font-size="12">
+<rect width="720" height="400" fill="#ffffff"/>
+<text x="70" y="26" font-size="16" font-weight="bold" fill="#222">Energy of the moving kink</text>
+<line x1="70.0" y1="44" x2="70.0" y2="344" stroke="#e3e3e3"/>
+<line x1="70" y1="344.0" x2="700" y2="344.0" stroke="#e3e3e3"/>
+<text x="70.0" y="362" text-anchor="middle" fill="#444">0</text>
+<text x="62" y="348.0" text-anchor="end" fill="#444">0.935</text>
+<line x1="196.0" y1="44" x2="196.0" y2="344" stroke="#e3e3e3"/>
+<line x1="70" y1="284.0" x2="700" y2="284.0" stroke="#e3e3e3"/>
+<text x="196.0" y="362" text-anchor="middle" fill="#444">0.18</text>
+<text x="62" y="288.0" text-anchor="end" fill="#444">1.22</text>
+<line x1="322.0" y1="44" x2="322.0" y2="344" stroke="#e3e3e3"/>
+<line x1="70" y1="224.0" x2="700" y2="224.0" stroke="#e3e3e3"/>
+<text x="322.0" y="362" text-anchor="middle" fill="#444">0.36</text>
+<text x="62" y="228.0" text-anchor="end" fill="#444">1.5</text>
+<line x1="448.0" y1="44" x2="448.0" y2="344" stroke="#e3e3e3"/>
+<line x1="70" y1="164.0" x2="700" y2="164.0" stroke="#e3e3e3"/>
+<text x="448.0" y="362" text-anchor="middle" fill="#444">0.54</text>
+<text x="62" y="168.0" text-anchor="end" fill="#444">1.79</text>
+<line x1="574.0" y1="44" x2="574.0" y2="344" stroke="#e3e3e3"/>
+<line x1="70" y1="104.0" x2="700" y2="104.0" stroke="#e3e3e3"/>
+<text x="574.0" y="362" text-anchor="middle" fill="#444">0.72</text>
+<text x="62" y="108.0" text-anchor="end" fill="#444">2.07</text>
+<line x1="700.0" y1="44" x2="700.0" y2="344" stroke="#e3e3e3"/>
+<line x1="70" y1="44.0" x2="700" y2="44.0" stroke="#e3e3e3"/>
+<text x="700.0" y="362" text-anchor="middle" fill="#444">0.9</text>
+<text x="62" y="48.0" text-anchor="end" fill="#444">2.36</text>
+<rect x="70" y="44" width="630" height="300" fill="none" stroke="#888"/>
+<text x="385" y="388" text-anchor="middle" fill="#222">speed v (c = 1)</text>
+<text transform="translate(16 194) rotate(-90)" text-anchor="middle" fill="#222">E / 8</text>
+<polyline fill="none" stroke="#1f77b4" stroke-width="2" points="70.0,330.4 105.0,330.1 140.0,329.3 175.0,328.0 210.0,326.0 245.0,323.5 280.0,320.2 315.0,316.2 350.0,311.2 385.0,305.2 420.0,297.8 455.0,288.9 490.0,277.8 525.0,264.0 560.0,246.3 595.0,222.8 630.0,190.4 665.0,141.8 700.0,59.1 "/>
+<rect x="78" y="52" width="12" height="12" fill="#1f77b4"/><text x="96" y="63" fill="#222">measured E / 8</text>
+<polyline fill="none" stroke="#d62728" stroke-width="2" points="70.0,330.2 105.0,330.0 140.0,329.2 175.0,327.8 210.0,325.9 245.0,323.3 280.0,320.1 315.0,316.0 350.0,311.1 385.0,305.0 420.0,297.7 455.0,288.7 490.0,277.6 525.0,263.7 560.0,245.9 595.0,222.4 630.0,189.8 665.0,141.0 700.0,57.6 "/>
+<rect x="228" y="52" width="12" height="12" fill="#d62728"/><text x="246" y="63" fill="#222">gamma</text>
+</svg>
