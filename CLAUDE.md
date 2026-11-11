@@ -15,6 +15,9 @@ C11 + libm の sine-Gordon 場の実験。`src/field.c` が物理計算の正典
 - `make web`: Emscripten が必要。`dist/` 全体で 10MB 以下。
 - `make smoke`: ローカル限定の Playwright 実入力・原画読込・画像保存。
 - `make plots`: 既存の CSV/SVG/GIF を再生成。
+- `make theory-figs`: `docs/theory/figures/` の図と実測値の表を `tests/theory_figs.c` から再生成。`make theory-check`(Python 標準ライブラリ)は
+  `docs/theory/README.md` の対応表(文 → 頁 → 図 → 関数 → テスト)の欠け・リンク切れ・消えた関数名・未掲載の公開関数で落ちる。
+  法則・規則を足したら同じ PR で頁と図と表を足す。README の「26 statements」は表の行数と合わせる。
 - CI は PR の軽量ゲート `docker build .`(Dockerfile の中で `make test` と `make plots`)だけ。ブラウザー撮影・Web ビルドはローカル。
 - 保存・乱数は使わない。URL のサブパスで動作し、外部通信を追加しない。
 

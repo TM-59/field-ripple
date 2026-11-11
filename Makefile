@@ -5,7 +5,7 @@ SRC     := src/field.c src/svg.c src/render.c src/gif.c
 EMCC    ?= emcc
 PORT    ?= 4190
 
-.PHONY: all test bench story story-check web smoke play plots clean
+.PHONY: all test bench story story-check web smoke play plots clean theory-figs theory-check
 all: field-ripple
 
 field-ripple: $(SRC) src/main.c
@@ -84,6 +84,18 @@ plots: field-ripple
 	./field-ripple --gif docs/demo.gif
 	head -c6 docs/demo.gif | grep -q GIF89a
 
+# Regenerates the plotted figures and the measured-values table of docs/theory (one command).
+theory_figs: $(LINE) src/svg.c tests/theory_figs.c $(LINE_H) src/svg.h
+	$(CC) $(CFLAGS) -o $@ $(LINE) src/svg.c tests/theory_figs.c $(LDLIBS)
+
+theory-figs: theory_figs
+	mkdir -p docs/theory/figures
+	./theory_figs docs/theory/figures
+
+# Fails when a statement of docs/theory has no figure, a link is broken, or a referenced function or test is gone.
+theory-check:
+	python3 scripts/theory-check.py
+
 clean:
-	rm -f field-ripple test_field test_gif test_observer bench_field test_line story_bench
+	rm -f field-ripple test_field test_gif test_observer bench_field test_line story_bench theory_figs
 	rm -rf dist
