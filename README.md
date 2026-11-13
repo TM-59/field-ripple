@@ -3,7 +3,7 @@
 Push a sine-Gordon kink with a field and watch it behave like a relativistic particle. A C11 scalar field theory in 1+1 dimensions, `φ_tt = φ_xx − sin φ`, a standard toy model that shares its structure with quantum field theory.
 (C言語の1+1次元スカラー場シミュレータ。場の孤立波(キンク)を押して、ローレンツ収縮と速度の上限を観察します。)
 
-**Theory handbook:** [docs/theory](docs/theory/README.md) states every law, numerical rule and game rule the code relies on (26 statements), each with a figure, the function that implements it and the test or measurement that checks it. `make theory-figs` regenerates the figures from the solver; `make theory-check` verifies the coverage table.
+**Theory handbook:** [docs/theory](docs/theory/README.md) states every law, numerical rule and game rule the code relies on (34 statements), each with a figure, the function that implements it and the test or measurement that checks it. `make theory-figs` regenerates the figures from the solver; `make theory-check` verifies the coverage table.
 (理論の手引き: コードが拠る法則・数値計算の規則・ゲームの規則を、図・実装箇所・検査とともに `docs/theory` にまとめています。)
 
 The browser observatory uses the same C solver, with live field and energy-density plots, a stationary reference curve, keyboard/touch forces and an original illustrated laboratory.
@@ -29,12 +29,43 @@ The Turn Line is a mile of pendulums on a wire coupled by torsion springs, the m
 
 `make story` runs 972 nights (96 paired seeds for each ablation arm, plus scene-order and independent tension runs) with a keeper who reads only the gauges and writes `docs/narrative/{play-order,ablation,tension}.json`; `make test` checks the scene order, every story number, the quiet heavy scenes and both choices, and re-runs eight representative bench rows that must appear byte for byte. `make story-check` regenerates and compares every row. The two outcome metrics are the night clock and the HUD **Failures** counter; time in the red is a charge reading, recorded as `resource` and excluded from outcome tests. All four reward/punishment/loss beats must change both outcomes in the expected direction; each choice must give each path a measurable advantage. Generate and check them with Debian 13 GCC 14 and its libm (CI uses the Dockerfile; local checks can use the same Debian packages extracted into a temporary directory). See [outcome validation](docs/outcome-validation.md).
 
+## Collisions and breathers
+
+A kink and an antikink thrown at each other pass straight through: no reflection, no annihilation. Each comes out ahead of the path it would have taken alone by `2 √(1 − v²) ln(1/v)` (Perring–Skyrme). Below the energy of two resting kinks (16) the pair cannot part and becomes a breather that oscillates in place at `ω = √(1 − ν²)` with energy `16 √(1 − ω²)`. `src/pair.c` holds the exact solutions and the measurements; the solver is the unchanged `src/field.c`.
+(キンクと反キンクの衝突は通り抜け、位相のずれ `2√(1−v²) ln(1/v)` だけ前に出る。エネルギー 16 未満では束縛されたブリーザーになる。)
+
+![Space-time maps: a pair at v = 0.5 passing through (left), a breather at ω = 0.3 (right)](docs/collision.gif)
+
+*`./field-ripple --collide docs` (part of `make plots`): φ over x ∈ [−20, 20] across and time down; blue is −2π, amber +2π.*
+
+| Measured on the game's grid (dx = 0.1, dt = 0.05) | Measured | Theory | Error |
+|---|---|---|---|
+| Forward shift after the collision, v = 0.1 | 4.58317 | 4.58209 | 0.024 % |
+| Forward shift, v = 0.5 | 1.20079 | 1.20057 | 0.019 % |
+| Forward shift, v = 0.9 (width four cells) | 0.091144 | 0.091851 | 0.77 % |
+| Speed after / before the collision, v = 0.5 | 0.499725 | 0.499726 | 3e-6 |
+| Energy after the collision / before | | | 2.2e-6 |
+| Breather frequency, ω = 0.5 (20 periods) | 0.500387 | 0.5 | 0.077 % |
+| Breather frequency, ω = 0.8 | 0.800116 | 0.8 | 0.014 % |
+| Breather energy, ω = 0.5 | 13.8485 | 13.8564 | 0.057 % |
+| Breather energy drift between breaths, ω = 0.5 | | | 7.9e-7 |
+| Widest front separation, ω = 0.3 | 3.8168 | 3.82471 | 0.21 % |
+
+Errors are second order in the grid spacing (halving dx divides them by 3.998 for the shift at v = 0.7 and 4.003 for ω = 0.3). The limits: at v = 0.95 the soliton is three cells wide and the shift is 9 % off; ω = 0.2 breathers run 0.94 % fast. Derivations, figures and every value: [theory handbook page 6](docs/theory/06-collisions-and-breathers.md).
+
+In the browser, **Collisions & breathers** (on the entry screen, or below the free observation) runs the same C: choose a pair speed or a breather frequency with the slider or presets and press **Run**. The panel draws the field against the exact formula, the energy density and a space-time map, and reports the measured shift (or ω), energy, momentum and the largest gap to the exact solution.
+
+![Collision panel after a v = 0.5 pair](docs/images/collide-pair.jpg)
+![Breather at ω = 0.5](docs/images/collide-breather.jpg)
+![390-pixel phone, run by taps](docs/images/collide-mobile.jpg)
+
 ## Run
 
 ```sh
 make && ./field-ripple          # interactive
 ./field-ripple --snapshot       # one frame, no terminal needed
 ./field-ripple --gif docs/demo.gif  # scripted push-and-brake run as an animated GIF
+./field-ripple --collide docs  # space-time maps of a collision and a breather (docs/collision.gif)
 make test && make bench         # native physics, GIF and presentation-adapter checks
 make plots                      # regenerate CSV, SVG and GIF
 ```
@@ -86,6 +117,8 @@ Pushed for 100 time units with `ε = 0.01`: simulated speed 0.614, particle theo
 
 `tests/test_field.c` checks: static kink energy 8 and stays put, moving kink follows `x = vt`, energy `8γ` and conserved (1e-3), peak gradient `2γ` at v = 0, 0.6, 0.9 (Lorentz contraction), small waves follow `ω² = k² + 1`, the push matches `p/E`, renderer bounds.
 
+`tests/test_pair.c` checks the pair against Perring–Skyrme (gap shrinking fourfold with the grid), the phase shift at v = 0.1 … 0.9 within 5 %, equal speeds before and after, energy and momentum through the collision, the breather frequency within 1 % for ω = 0.3 … 0.95, its energy `16√(1−ω²)`, no drift between breaths, its widest separation, and the browser adapter `src/pair_web.c`.
+
 `tests/test_observer.c` compares the browser adapter with the native solver, validates samples and input bounds, and checks both push directions, finite-domain stopping and reset. `make bench` measures free motion at 0, 0.6 and 0.9 c, energy drift, contraction and push/brake behavior.
 
 Local browser verification (Node.js and Playwright Chromium required):
@@ -96,10 +129,10 @@ npx playwright install chromium
 make smoke
 ```
 
-The smoke check uses real keyboard and touch input under a non-root URL path, checks numerical results, pause/reset/focus loss, observation limits, missing-art fallback and external requests, runs two whole Flood Line nights with real keys (both endings, heavy scenes with no banner), checks phone sizes upright and sideways (words 14 CSS px or more, targets 44 px or more, the plot over half the screen), and refreshes the screenshots. CI runs only `docker build .` (make test and make plots) on pull requests. Human first-use feedback, physical mobile devices and other browser engines are **unverified / 未検証**. This change does not deploy or submit the application.
+The smoke check uses real keyboard and touch input under a non-root URL path, checks numerical results, pause/reset/focus loss, observation limits, missing-art fallback and external requests, runs two whole Flood Line nights with real keys (both endings, heavy scenes with no banner), checks phone sizes upright and sideways (words 14 CSS px or more, targets 44 px or more, the plot over half the screen), runs the collision panel with real clicks, keys and taps (WASM shift and ω equal to the native `./test_pair` values; 390×844 and 844×390 words and targets; 1440 and 1024 px without horizontal scroll), and refreshes the screenshots. CI runs only `docker build .` (make test and make plots) on pull requests. Human first-use feedback, physical mobile devices and other browser engines are **unverified / 未検証**. This change does not deploy or submit the application.
 
 ## Roadmap
 
-See the Issues: kink–antikink collisions and breathers, φ⁴ kinks, 2+1 dimensional fields.
+See the Issues: φ⁴ kinks, 2+1 dimensional fields.
 
 Part of a series of small C physics toys, tracked in [algo-vis-panel](https://github.com/TM-59/algo-vis-panel/issues/6). MIT licensed.

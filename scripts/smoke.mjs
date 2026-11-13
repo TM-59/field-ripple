@@ -6,6 +6,7 @@ import {existsSync} from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
 
 const libs = path.join(os.homedir(),'.local/lib/chromium-deps/usr/lib/x86_64-linux-gnu');
 if(existsSync(libs))process.env.LD_LIBRARY_PATH=libs+(process.env.LD_LIBRARY_PATH?`:${process.env.LD_LIBRARY_PATH}`:'');
@@ -180,6 +181,80 @@ try {
     checks.push(`${w}x${h} touch: hold moves the turn; words >=14 px, targets >=44 px, plot ${(m.area*100).toFixed(0)} % of the screen`);
   }
 
+
+  // Collisions and breathers: the same C (src/pair.c) through WebAssembly; the native test prints the reference values.
+  const native=execFileSync('./test_pair',{encoding:'utf8'});
+  const nativeShift=Number(native.match(/\[panel\] pair v = 0\.5: shift ([0-9.]+)/)[1]);
+  const nativeOmega=Number(native.match(/\[panel\] breather omega 0\.6: measured ([0-9.]+)/)[1]);
+  const cv=p=>p.evaluate(()=>window.collideView);
+  async function collideRun(p,timeout=60000){
+    await p.locator('#collide-run').click();
+    await p.waitForFunction(()=>window.collideView?.done===1,null,{timeout});
+    return cv(p);
+  }
+  {
+    const p=await browser.newPage({viewport:{width:1280,height:900}});track(p);await p.goto(url);
+    await p.waitForFunction(()=>!document.getElementById('collide-open').disabled);
+    await p.locator('#collide-open').click();
+    let c=await cv(p);
+    assert.equal(c.mode,0);assert.equal(c.param,.5);
+    assert(Math.abs(c.left+20)<1e-3&&Math.abs(c.right-20)<1e-3,'fronts start at ±20');
+    assert(Math.abs(c.energy/c.energyTheory-1)<0.002,'pair energy 16 gamma');
+    c=await collideRun(p);
+    assert(Math.abs(c.shift-nativeShift)<1e-4,`WASM shift ${c.shift} vs native ${nativeShift}`);
+    assert(Math.abs(c.shift/c.shiftTheory-1)<0.05&&c.gap<0.15&&Math.abs(c.momentum)<1e-9&&c.fronts===2);
+    await p.locator('#collide').screenshot({path:'docs/images/collide-pair.jpg',type:'jpeg',quality:85});
+    checks.push(`collision panel: v = 0.5 pair passes through, shift ${c.shift.toFixed(5)} (theory ${c.shiftTheory.toFixed(5)}, native ${nativeShift}), gap to exact ${c.gap.toFixed(3)} rad, |P| ${Math.abs(c.momentum).toExponential(1)}`);
+    await p.locator('#collide-presets button',{hasText:'0.9 c'}).click();
+    c=await cv(p);assert.equal(c.param,.9);assert.equal(c.time,c.start);
+    c=await collideRun(p);
+    assert(Math.abs(c.shift/c.shiftTheory-1)<0.05,`v 0.9 shift ${c.shift}`);
+    const fast=c;
+    // The real slider drives C: keyboard on the range input.
+    await p.locator('#collide-param').focus();await p.keyboard.press('ArrowLeft');
+    c=await cv(p);assert(Math.abs(c.param-.85)<1e-9&&c.time===c.start);
+    checks.push(`preset 0.9 c: shift ${fast.shift.toFixed(5)} (theory ${fast.shiftTheory.toFixed(5)}); slider key moves v to 0.85 and restarts`);
+    await p.locator('[data-collide-mode="1"]').click();
+    c=await cv(p);assert.equal(c.mode,1);assert.equal(c.param,.5);
+    c=await collideRun(p);
+    assert(Math.abs(c.omega/0.5-1)<0.01&&Math.abs(c.energy/c.energyTheory-1)<0.003);
+    const breath=c;
+    await p.locator('#collide').screenshot({path:'docs/images/collide-breather.jpg',type:'jpeg',quality:85});
+    // Same WASM as the native adapter test at omega = 0.6.
+    await p.evaluate(()=>{const s=document.getElementById('collide-param');s.value='0.6';s.dispatchEvent(new Event('input'));});
+    c=await collideRun(p);
+    assert(Math.abs(c.omega-nativeOmega)<1e-5,`WASM omega ${c.omega} vs native ${nativeOmega}`);
+    checks.push(`breather panel: omega 0.5 measured ${breath.omega.toFixed(5)}, energy ${breath.energy.toFixed(3)} (theory ${breath.energyTheory.toFixed(3)}), widest gap ${breath.separation.toFixed(3)} (theory ${breath.separationTheory.toFixed(3)}); omega 0.6 WASM ${c.omega} = native ${nativeOmega}`);
+    for(const w of [1440,1024]){
+      await p.setViewportSize({width:w,height:900});await p.waitForTimeout(100);
+      assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`horizontal scroll at ${w}`);
+    }
+    checks.push('collision panel at 1440 and 1024 px wide: no horizontal scroll');
+    await p.close();
+  }
+  for(const [w,h,name] of [[390,844,'collide-mobile'],[844,390,null]]){
+    const ctx=await browser.newContext({viewport:{width:w,height:h},deviceScaleFactor:2,isMobile:true,hasTouch:true});
+    const p=await ctx.newPage();track(p);await p.goto(url);
+    await p.waitForFunction(()=>!document.getElementById('collide-open').disabled);
+    await p.locator('#collide-open').tap();
+    await p.locator('[data-collide-mode="1"]').tap();
+    await p.locator('#collide-presets button').last().tap();
+    await p.locator('#collide-run').tap();
+    await p.waitForFunction(()=>window.collideView?.done===1,null,{timeout:60000});
+    const c=await cv(p);assert(Math.abs(c.omega/0.9-1)<0.01,`touch breather ${c.omega}`);
+    const m=await p.evaluate(()=>{
+      const small=[],tiny=[],root=document.getElementById('collide');
+      const vis=e=>{const r=e.getBoundingClientRect();const st=getComputedStyle(e);return r.width>0&&r.height>0&&st.visibility!=='hidden';};
+      for(const e of root.querySelectorAll('*')){if(!vis(e))continue;for(const n of e.childNodes)if(n.nodeType===3&&n.textContent.trim()&&parseFloat(getComputedStyle(e).fontSize)<14)small.push(n.textContent.trim().slice(0,20));}
+      for(const e of root.querySelectorAll('button,a[href],input,select')){if(!vis(e))continue;const r=e.getBoundingClientRect();if(r.width<44||r.height<44)tiny.push(e.id||e.textContent.trim().slice(0,20));}
+      return {small,tiny,overflow:document.documentElement.scrollWidth>innerWidth};
+    });
+    assert.deepEqual(m.small,[]);assert.deepEqual(m.tiny,[]);assert(!m.overflow,'horizontal overflow');
+    if(name)await p.locator('#collide').screenshot({path:`docs/images/${name}.jpg`,type:'jpeg',quality:85});
+    await ctx.close();
+    checks.push(`${w}x${h} touch: breather run by taps (omega ${c.omega.toFixed(4)}); collision panel words >=14 px, targets >=44 px, no horizontal overflow`);
+  }
+
   const fallback=await browser.newPage({viewport:{width:1280,height:900}});track(fallback,{fallback:true});
   await fallback.route('**/assets/**',route=>route.fulfill({status:404,body:''}));
   await fallback.goto(url);await fallback.waitForFunction(()=>window.fieldView);
@@ -190,7 +265,7 @@ try {
   assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);assert.deepEqual(failedResponses,[]);assert.deepEqual(external,[]);
   checks.push('page errors 0; console errors 0; unexpected HTTP failures 0; external requests 0');
   const images=[];
-  for(const name of ['before.png','title.jpg','coasting.jpg','contracted.jpg','mobile.jpg','line-play.jpg','line-choice.jpg','line-bottom.jpg','line-ending-ford.jpg','line-ending-siren.jpg','line-mobile.jpg']) {
+  for(const name of ['before.png','title.jpg','coasting.jpg','contracted.jpg','mobile.jpg','line-play.jpg','line-choice.jpg','line-bottom.jpg','line-ending-ford.jpg','line-ending-siren.jpg','line-mobile.jpg','collide-pair.jpg','collide-breather.jpg','collide-mobile.jpg']) {
     const file=`docs/images/${name}`;images.push({file,bytes:(await stat(file)).size});
   }
   const summary={checks,errors,consoleErrors,failedResponses,externalRequests:external,images};

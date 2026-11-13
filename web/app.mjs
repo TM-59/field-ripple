@@ -1,8 +1,9 @@
 import createField from './field.mjs';
+import {initCollide} from './collide.mjs';
 
 const $ = id => document.getElementById(id);
 const keys = new Set(), pointers = new Map();
-let field, paused = true, started = false, artLoaded = false, initialSpeed = 0, force = 0, mode = 'entry';
+let collide, field, paused = true, started = false, artLoaded = false, initialSpeed = 0, force = 0, mode = 'entry';
 let lastFrame = 0, accumulator = 0;
 const canvas = $('field-plot'), ctx = canvas.getContext('2d');
 const pi = Math.PI;
@@ -26,6 +27,7 @@ function start() {
   $('line').hidden = true; $('observatory').hidden = false;
   reset();
   $('pause').focus({preventScroll:true});
+  if(collide)collide.update();
 }
 function selectSpeed(speed) {
   initialSpeed = speed; $('speed').value = speed;
@@ -146,6 +148,7 @@ document.addEventListener('keyup',e=>{
 window.addEventListener('blur',()=>{if(field&&mode==='free')setPaused(true);if(mode==='line')linePause(true);});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&field&&mode==='free')setPaused(true);if(document.hidden&&mode==='line')linePause(true);});
 $('start').addEventListener('click',start);
+$('collide-open').addEventListener('click',()=>{start();$('collide').scrollIntoView({block:'start'});$('collide-run').focus({preventScroll:true});});
 $('line-start').addEventListener('click',()=>lineStart());
 $('pause').addEventListener('click',()=>setPaused(!paused));
 $('reset').addEventListener('click',reset);
@@ -437,7 +440,7 @@ for (const button of document.querySelectorAll('[data-motor]')) {
 }
 $('line-pause').addEventListener('click', () => { if (ls && ls.scene < 0 && !lineDone()) linePause(!linePaused); });
 $('line-restart').addEventListener('click', () => lineReset(false));
-$('back-line').addEventListener('click', () => { mode = 'entry'; $('observatory').hidden = true; $('line').hidden = false; $('welcome').hidden = false; shownScene = -2; $('scene').hidden = true; });
+$('back-line').addEventListener('click', () => { if (collide) collide.pause(); mode = 'entry'; $('observatory').hidden = true; $('line').hidden = false; $('welcome').hidden = false; shownScene = -2; $('scene').hidden = true; });
 $('line-leave').addEventListener('click', () => { mode = 'entry'; linePause(true); $('scene').hidden = true; shownScene = -2; $('welcome').hidden = false; });
 // Common read-only test hook for the automated playability check (phone-sized, touch only).
 // Logical units are the canvas's CSS pixels. DOM words and buttons are measured by the gate directly.
@@ -473,6 +476,7 @@ window.__tmGate = {
 try {
   field=await createField();field._fr_reset(0);
   $('start').disabled=false;$('line-start').disabled=false;
+  collide=initCollide(field);$('collide-open').disabled=false;
   field._lw_reset();ls=lineRead();
   $('load-status').textContent='Ready · keyboard and touch controls';
   requestAnimationFrame(frame);

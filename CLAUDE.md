@@ -17,9 +17,16 @@ C11 + libm の sine-Gordon 場の実験。`src/field.c` が物理計算の正典
 - `make plots`: 既存の CSV/SVG/GIF を再生成。
 - `make theory-figs`: `docs/theory/figures/` の図と実測値の表を `tests/theory_figs.c` から再生成。`make theory-check`(Python 標準ライブラリ)は
   `docs/theory/README.md` の対応表(文 → 頁 → 図 → 関数 → テスト)の欠け・リンク切れ・消えた関数名・未掲載の公開関数で落ちる。
-  法則・規則を足したら同じ PR で頁と図と表を足す。README の「26 statements」は表の行数と合わせる。
+  法則・規則を足したら同じ PR で頁と図と表を足す。README の「34 statements」は表の行数と合わせる。
 - CI は PR の軽量ゲート `docker build .`(Dockerfile の中で `make test` と `make plots`)だけ。ブラウザー撮影・Web ビルドはローカル。
 - 保存・乱数は使わない。URL のサブパスで動作し、外部通信を追加しない。
+
+## 衝突とブリーザー(2026-11-13、Issue #2)
+
+- `src/pair.c` は `src/field.c` を変えずに、キンク–反キンク(Perring–Skyrme)とブリーザーの厳密解・初期条件・運動量・中心の位置・位相のずれと振動数の測り方を持つ。
+  `src/pair_web.c` は観測画面「Collisions & breathers」(`web/collide.mjs`)の入口。端末版は `./field-ripple --collide docs` が `docs/collision.gif` を書く(`make plots` に含む)。
+- `tests/test_pair.c` が解析解との照合(ずれ 5 %・振動数 1 %・エネルギー・運動量・格子での 2 次収束)を強制する。理論は `docs/theory/06-collisions-and-breathers.md`(S27〜S34)。
+- 格子の限界: v = 0.95 は幅が 3 格子でずれが 9 % 外れる、ω = 0.2 は振動数が 0.94 % 高い(dx を半分で 1/4)。
 
 ## 独自原画の例外 (2026-10-24、Issue #8)
 

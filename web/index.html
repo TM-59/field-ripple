@@ -23,7 +23,7 @@
           <p class="eyebrow">A PARTICLE MADE OF A FIELD · THE FLOOD LINE</p>
           <h2 id="welcome-title">One night. Five turns of the line.</h2>
           <p class="intro">The Turn Line is a mile of pendulums on a wire, the mechanical model of the sine-Gordon field. A full turn of the chain runs along it like a particle. Tonight the river is rising, and each turn you park on a mark rings that mark's bell.</p>
-          <div class="entry-buttons"><button id="line-start" class="primary" disabled>Start the night →</button><button id="start" disabled>Free observation</button></div>
+          <div class="entry-buttons"><button id="line-start" class="primary" disabled>Start the night →</button><button id="start" disabled>Free observation</button><button id="collide-open" disabled>Collisions &amp; breathers</button></div>
           <p id="load-status" role="status">Loading the field.</p>
           <p class="entry-caption">Background: original concept art of an imagined laboratory. The plots are computed measurements.</p>
         </section>
@@ -83,6 +83,36 @@
       <section class="explanation">
         <div><p class="eyebrow">WHAT TO LOOK FOR</p><h2>Faster motion. <br>A narrower field.</h2></div>
         <div><p>The solid curve comes from the evolving field. The dashed curve is a stationary kink, centred on the same position. Try <strong>0.9 c</strong>: the transition becomes much steeper.</p><p>For a free kink, width = √(1 − v²) and E = 8 / √(1 − v²). With a force applied, the field also excites background waves; its total energy includes those waves.</p><p class="model-note">Units are dimensionless, c = 1. Leapfrog: Δx = 0.1, Δt = 0.05. Observation stops at |x| ≥ 75 or t = 120, before boundary effects dominate. Concept art is an imagined setting; the plots are computed measurements.</p></div>
+      </section>
+      <section id="collide" aria-labelledby="collide-title">
+        <div class="collide-heading"><p class="eyebrow">EXPERIMENT 02 / TWO SOLITONS</p><h2 id="collide-title">Collisions and breathers</h2>
+          <p>A kink and an antikink meet and pass straight through each other, coming out a little ahead. Slow them below the threshold and they never part: a breather. Every curve is the same C solver, drawn next to the exact solution.</p></div>
+        <div class="collide-grid">
+          <div class="instrument collide-plots">
+            <div class="instrument-title"><h2>Field now</h2><span id="c-clock">t = 0.0</span></div>
+            <div class="legend"><span class="cyan">— φ (solver)</span><span class="ghost">┄ exact formula</span><span class="amber">— energy density</span></div>
+            <canvas id="collide-plot" role="img" aria-label="The field phi in radians from x = -30 to 30: the solver as a solid line, the exact solution dashed, and the energy density below."></canvas>
+            <div class="instrument-title collide-map-title"><h2>Space-time map</h2><span>x across · t down</span></div>
+            <div class="legend"><span class="map-key"><i class="key-neg"></i>φ = −2π</span><span class="map-key"><i class="key-zero"></i>0</span><span class="map-key"><i class="key-pos"></i>φ = +2π</span></div>
+            <canvas id="collide-map" role="img" aria-label="Space-time map of phi: x from -30 to 30 across, time running down. Blue is phi near minus two pi, amber near plus two pi."></canvas>
+          </div>
+          <aside class="controls collide-controls" aria-label="Collision controls">
+            <div class="instrument-title"><h2>Set the experiment</h2><span>c = 1</span></div>
+            <div class="mode-switch" role="group" aria-label="What to run"><button data-collide-mode="0" class="active">Collide a pair</button><button data-collide-mode="1">Breather</button></div>
+            <label for="collide-param"><span id="collide-param-name">Speed of each, v</span> <output id="collide-param-label">0.50</output></label>
+            <input id="collide-param" type="range" min="0.05" max="0.95" step="0.05" value="0.5">
+            <div class="presets" id="collide-presets" aria-label="Presets"></div>
+            <div class="transport"><button id="collide-run" class="primary">Run</button><button id="collide-reset">Reset</button></div>
+            <p class="hint" id="collide-note">Changing the slider starts a fresh run from the exact solution.</p>
+          </aside>
+        </div>
+        <section class="readouts collide-readouts" aria-label="Collision measurements">
+          <div><span id="c-a-name">SHIFT, MEASURED</span><output id="c-a">—</output><small id="c-a-theory">theory 2√(1−v²) ln(1/v) = 1.2006</small></div>
+          <div><span>ENERGY</span><output id="c-energy">0.000</output><small id="c-energy-theory">theory 16γ = 18.475</small></div>
+          <div><span>MOMENTUM</span><output id="c-momentum">0</output><small>theory 0 (symmetric)</small></div>
+          <div><span>LARGEST GAP TO EXACT</span><output id="c-gap">0.000</output><small>rad, whole grid so far</small></div>
+        </section>
+        <p class="model-note collide-note">Units are dimensionless, c = 1; grid Δx = 0.1, Δt = 0.05. The shift is fitted from the centres (|φ| = π) while they are at least 16 apart; ω from the zero crossings of φ(0, t). The gap to the exact formula is the grid's own error: about 0.1 rad at v = 0.5 and four times smaller on a grid twice as fine. See the theory handbook, page 6.</p>
       </section>
     </section>
     <p id="art-warning" hidden>Observatory illustration unavailable. All measurements and controls remain available.</p>

@@ -13,6 +13,7 @@ Why the program is correct, from the repository alone: every law, theorem, numer
 3. [The numerical scheme](03-leapfrog.md) — leapfrog stencil, start-up, stability limit, energy error, grid dispersion
 4. [Boundaries and what the instruments read](04-boundaries-and-measurement.md) — grid ends, position, speed and width, the path to the screen
 5. [The Flood Line: the rules of the game layer](05-flood-line.md) — motor ramp, cell, stopping distance, parking, scenes, the call, the readout
+6. [Collisions and breathers](06-collisions-and-breathers.md) — the kink–antikink solution, passing through with a phase shift, conserved quantities, the breather, bound against free, grid limits, the collision panel
 
 ## How the pieces depend on each other
 
@@ -48,6 +49,21 @@ flowchart TD
     S21 --> S25["S25 the call"]
     S22 --> S25
     S17 --> S26["S26 readout wobble"]
+    S05 --> S27["S27 kink–antikink solution"]
+    S27 --> S28["S28 pass through, shift 2 ln(1/v)/γ"]
+    S16 --> S28
+    S08 --> S29["S29 E = 16γ, P, speeds kept"]
+    S28 --> S29
+    S27 --> S30["S30 breather, ω = √(1 − ν²)"]
+    S03 --> S30
+    S30 --> S31["S31 breather energy 16ν"]
+    S29 --> S32["S32 bound below E = 16"]
+    S31 --> S32
+    S14 --> S33["S33 grid limits"]
+    S28 --> S33
+    S30 --> S33
+    S28 --> S34["S34 collision panel"]
+    S30 --> S34
 ```
 
 ## Coverage: statement → page → figure → code → test
@@ -80,6 +96,14 @@ flowchart TD
 | S24 | Scenes and the numbers they change | [5](05-flood-line.md) | mermaid | `src/line.c#line_answer`, `src/line.c#line_options`, `src/line.c#line_heavy`, `src/line.c#line_ending`, `src/line.c#line_value` | `tests/test_line.c#[beat]` |
 | S25 | The call from the far end | [5](05-flood-line.md) | mermaid | `src/line.c#line_cue` | `tests/theory_figs.c#cue-brake` |
 | S26 | Readout wobble | [5](05-flood-line.md) | `figures/wobble.svg` | `src/line.c#line_wobble` | `tests/theory_figs.c#wobble-call` |
+| S27 | Kink–antikink solution $4\arctan\frac{\sinh\gamma vt}{v\cosh\gamma x}$ | [6](06-collisions-and-breathers.md) | `figures/pair-snapshots.svg` | `src/pair.c#sg_pair_exact`, `src/pair.c#field_set_pair` | `tests/test_pair.c#test_pair_follows_perring_skyrme` |
+| S28 | They pass through, ahead by $2\sqrt{1-v^2}\ln(1/v)$ | [6](06-collisions-and-breathers.md) | `figures/pair-worldlines.svg`, `figures/pair-shift.svg` | `src/pair.c#sg_pair_shift`, `src/pair.c#field_set_superposed_pair`, `src/pair.c#field_fronts`, `src/pair.c#pair_measure_shift`, `src/pair.c#pair_shift_from_tracks` | `tests/test_pair.c#test_pair_passes_through_with_the_phase_shift` |
+| S29 | Energy ${16}\gamma$, momentum and speed survive | [6](06-collisions-and-breathers.md) | `figures/pair-conserved.svg` | `src/pair.c#field_momentum`, `src/pair.c#sg_pair_energy` | `tests/test_pair.c#test_pair_conserves_energy_momentum_and_speed` |
+| S30 | Breather, frequency $\omega = \sqrt{1-\nu^2}$ | [6](06-collisions-and-breathers.md) | `figures/breather-centre.svg` | `src/pair.c#sg_breather_exact`, `src/pair.c#field_set_breather`, `src/pair.c#field_value_at`, `src/pair.c#breather_measure_frequency` | `tests/test_pair.c#test_breather_keeps_frequency_and_shape` |
+| S31 | Breather energy ${16}\sqrt{1-\omega^2}$, conserved | [6](06-collisions-and-breathers.md) | `figures/breather-energy.svg` | `src/pair.c#sg_breather_energy` | `tests/test_pair.c#test_breather_energy` |
+| S32 | Bound below $E = 16$, free above | [6](06-collisions-and-breathers.md) | `figures/bound-unbound.svg`, `figures/threshold.svg` | `src/pair.c#sg_breather_separation`, `src/pair.c#field_fronts` | `tests/test_pair.c#test_breather_is_a_bound_pair` |
+| S33 | Grid limits: second order, no Peierls–Nabarro pinning | [6](06-collisions-and-breathers.md) | `figures/collision-grid.svg` | `src/field.c#field_step`, `src/pair.c#pair_measure_shift` | `tests/theory_figs.c#shift-order` |
+| S34 | From the solver to the collision panel | [6](06-collisions-and-breathers.md) | mermaid | `src/pair_web.c#pw_reset`, `src/pair_web.c#pw_step`, `src/pair_web.c#pw_value`, `src/pair_web.c#pw_samples`, `src/pair_web.c#pw_history` | `tests/test_pair.c#test_browser_adapter` |
 
 Tests named `tests/theory_figs.c#…` are measurements recorded in [figures/values.md](figures/values.md) by `make theory-figs`, not assertions of `make test`. S12–S14, S19, S21, S22, S25 and S26 are covered only that way; turning them into assertions is a follow-up.
 
@@ -95,4 +119,4 @@ These are plumbing; they appear here so that the check can tell "not a law" from
 
 ## Reading the source against this table
 
-Functions reviewed for this handbook: every declaration in `src/field.h`, `src/observer.h`, `src/line.h`, `src/render.h`, `src/svg.h` and `src/gif.h`, plus the static helper `at` in `src/field.c`. `src/main.c` (terminal program and plots) and `src/line_web.c` (WebAssembly wrapper of `line.c`) call these functions and state no law of their own.
+Functions reviewed for this handbook: every declaration in `src/field.h`, `src/observer.h`, `src/line.h`, `src/pair.h`, `src/render.h`, `src/svg.h` and `src/gif.h`, plus the static helper `at` in `src/field.c` and the entry points of `src/pair_web.c` (S34). `src/main.c` (terminal program, plots and the space-time maps of `--collide`) and `src/line_web.c` (WebAssembly wrapper of `line.c`) call these functions and state no law of their own.
