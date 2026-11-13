@@ -1,12 +1,13 @@
 # Dependabot 標準配置(2026-09-07 TM-59 全リポジトリ規約。生成元: ~/project-context/bin/gen-dependabot.py。実在するマニフェストのみ)
-# 方針: 非アクティブ repo = monthly / minor+patch はエコシステム毎に 1 グループ / major は個別 PR / open PR 上限 3
+# 方針: 全 repo = weekly(2026-11-13) / minor+patch はエコシステム毎に 1 グループ / major は個別 PR / open PR 上限 3
 # マージは ~/project-context/bin/merge-dependabot.sh のみ(直列・rebase 待機・green 確認)。手動マージ禁止。
 version: 2
 updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
+      day: "monday"
       time: "09:00"
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 3
@@ -17,7 +18,8 @@ updates:
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
+      day: "monday"
       time: "09:00"
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 3
@@ -28,7 +30,8 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
+      day: "monday"
       time: "09:00"
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 3
