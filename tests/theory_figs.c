@@ -3,6 +3,7 @@
  * same solver (src/field.c) and story layer (src/line.c) the game uses; nothing is drawn by hand. */
 #include "../src/field.h"
 #include "../src/line.h"
+#include "../src/pair.h"
 #include "../src/svg.h"
 
 #include <math.h>
@@ -398,6 +399,228 @@ static void check_cue(void)
     line_free(&l);
 }
 
+/* 14: kink-antikink pair from the exact solution at t = -40, v = 0.5: the solver against Perring-Skyrme. */
+static void fig_pair(void)
+{
+    double v = 0.5, t0 = -40.0, worst = 0.0;
+    static float d[2][MAXN];
+    Field f;
+    if (field_init(&f, 1201, -60.0, 0.1, 0.05, 0)) exit(1);
+    field_set_pair(&f, v, t0);
+    int n = 601;
+    for (int k = 1; k <= 8; k++) {
+        run(&f, 10.0);
+        double t = t0 + 10.0 * k;
+        for (int j = 0; j < f.n; j++) {
+            double g = fabs(f.cur[j] - sg_pair_exact(field_x(&f, j), t, v));
+            if (g > worst) worst = g;
+        }
+        if (k == 3 || k == 5) {   /* t = -10 and t = +10 */
+            int m = k == 3 ? 0 : 1;
+            for (int i = 0; i < n; i++) {
+                double x = -30.0 + 0.1 * i;
+                xs[i] = (float)x;
+                d[m][i] = (float)(field_value_at(&f, x) / PI);
+                (m ? yb : ya)[i] = (float)(sg_pair_exact(x, t, v) / PI);
+            }
+        }
+    }
+    field_free(&f);
+    value("pair-gap-v0.5", "largest |phi - Perring-Skyrme| (rad) from t = -40 to 40, v = 0.5, dx = 0.1 (ideal 0)", worst, 0.0);
+    Series s[] = {{"solver t = -10", d[0], "#1f77b4"}, {"exact t = -10", ya, "#9ecae1"},
+                  {"solver t = +10", d[1], "#d62728"}, {"exact t = +10", yb, "#fcae91"}};
+    plot("pair-snapshots.svg", "Kink-antikink pair at v = 0.5 before and after it meets", "x", "phi / pi", n, s, 4);
+}
+
+/* 15: the centres of the pair (|phi| = pi) against time, and the phase shift against speed. */
+static void fig_shift(void)
+{
+    double v = 0.3, gamma = 1.0 / sqrt(1.0 - v * v), lag = log(1.0 / v) / gamma, t0 = -(20.0 - lag) / v;
+    static float free_in[MAXN];
+    Field f;
+    if (field_init(&f, 1201, -60.0, 0.1, 0.05, 0)) exit(1);
+    field_set_pair(&f, v, t0);
+    int n = 241;
+    double span = -2.0 * t0;
+    for (int i = 0; i < n; i++) {
+        if (i) run(&f, span / (n - 1));
+        double t = t0 + span * i / (n - 1), c[2];
+        int k = field_fronts(&f, c, 2);
+        xs[i] = (float)t;
+        ya[i] = (float)(k == 2 ? c[0] : 0.0);   /* 0 while |phi| < pi everywhere: the two have merged at x = 0 */
+        yb[i] = (float)(k == 2 ? c[1] : 0.0);
+        free_in[i] = (float)(v * t - lag);       /* the left soliton's path had it not met the other */
+    }
+    field_free(&f);
+    Series w[] = {{"left centre", ya, "#1f77b4"}, {"right centre", yb, "#d62728"}, {"free path of the left one", free_in, "#888888"}};
+    plot("pair-worldlines.svg", "Centres of the pair at v = 0.3: they pass through", "time t", "x where |phi| = pi", n, w, 3);
+
+    int m = 19;
+    for (int i = 0; i < m; i++) {
+        double u = 0.05 * (i + 1);
+        xs[i] = (float)u;
+        ya[i] = (float)sg_pair_shift(u);
+        yb[i] = (float)pair_measure_shift(u, 0.1, NULL, NULL);
+    }
+    double in, out;
+    value("shift-v0.1", "forward shift after the collision at v = 0.1 (theory 2 sqrt(1 - v^2) ln(1/v))", pair_measure_shift(0.1, 0.1, NULL, NULL), sg_pair_shift(0.1));
+    value("shift-v0.5", "forward shift after the collision at v = 0.5 (theory 2 sqrt(1 - v^2) ln(1/v))", pair_measure_shift(0.5, 0.1, &in, &out), sg_pair_shift(0.5));
+    value("speed-out-v0.5", "fitted speed after the collision against before it, v = 0.5 (theory: equal)", out, in);
+    value("shift-v0.9", "forward shift after the collision at v = 0.9, dx = 0.1", pair_measure_shift(0.9, 0.1, NULL, NULL), sg_pair_shift(0.9));
+    value("shift-v0.95", "forward shift at v = 0.95, dx = 0.1: the width 1/gamma = 0.31 is three grid cells", pair_measure_shift(0.95, 0.1, NULL, NULL), sg_pair_shift(0.95));
+    Series s[] = {{"2 sqrt(1-v^2) ln(1/v)", ya, "#d62728"}, {"measured", yb, "#1f77b4"}};
+    plot("pair-shift.svg", "Forward shift of each soliton after the collision", "speed v (c = 1)", "shift", m, s, 2);
+}
+
+/* 16: energy reading and momentum through a collision of the superposed pair at v = 0.5 (they meet at t = 40). */
+static void fig_pair_conserved(void)
+{
+    Field f;
+    if (field_init(&f, 2401, -120.0, 0.1, 0.05, 0)) exit(1);
+    field_set_superposed_pair(&f, 20.0, 0.5);
+    double e0 = field_energy(&f), worst_p = 0.0;
+    int n = 401;
+    for (int i = 0; i < n; i++) {
+        if (i) run(&f, 0.25);
+        double p = field_momentum(&f);
+        xs[i] = (float)(0.25 * i);
+        ya[i] = (float)((field_energy(&f) / e0 - 1.0) * 1e3);
+        yb[i] = (float)(p * 1e10);
+        if (fabs(p) > worst_p) worst_p = fabs(p);
+    }
+    value("pair-energy-v0.5", "energy of the superposed pair at v = 0.5 (theory 16 gamma)", e0, sg_pair_energy(0.5));
+    value("pair-energy-after", "energy at t = 100 (60 t after the collision) against the start (theory: equal)", field_energy(&f), e0);
+    value("pair-momentum", "largest |P| of the symmetric pair through the collision (theory 0)", worst_p, 0.0);
+    field_free(&f);
+    Series s[] = {{"(E / E0 - 1) x 1000", ya, "#2ca02c"}, {"P x 1e10", yb, "#1f77b4"}};
+    plot("pair-conserved.svg", "Energy reading and momentum through the collision (meet at t = 40)", "time t", "scaled value", n, s, 2);
+}
+
+/* 17: the breather: phi(0, t) against the exact solution, its frequency and its energy. */
+static void fig_breather(void)
+{
+    double w = 0.5;
+    Field f;
+    if (field_init(&f, 1201, -60.0, 0.1, 0.05, 0)) exit(1);
+    field_set_breather(&f, w, 0.0, 0.0);
+    int n = 601;
+    for (int i = 0; i < n; i++) {
+        if (i) run(&f, 0.1);
+        xs[i] = (float)(0.1 * i);
+        ya[i] = (float)field_value_at(&f, 0.0);
+        yb[i] = (float)sg_breather_exact(0.0, 0.1 * i, w);
+    }
+    field_free(&f);
+    Series s[] = {{"solver phi(0, t)", ya, "#1f77b4"}, {"exact", yb, "#d62728"}};
+    plot("breather-centre.svg", "Breather at omega = 0.5: phi at its centre", "time t", "phi(0, t)", n, s, 2);
+
+    double drift, swing, fine;
+    value("breather-omega-0.3", "measured angular frequency over 20 periods, omega = 0.3", breather_measure_frequency(0.3, 0.1, 20, NULL, NULL, NULL), 0.3);
+    value("breather-omega-0.5", "measured angular frequency over 20 periods, omega = 0.5", breather_measure_frequency(0.5, 0.1, 20, &drift, &swing, NULL), 0.5);
+    breather_measure_frequency(0.5, 0.05, 20, NULL, &fine, NULL);
+    value("breather-omega-0.8", "measured angular frequency over 20 periods, omega = 0.8", breather_measure_frequency(0.8, 0.1, 20, NULL, NULL, NULL), 0.8);
+    value("breather-drift-0.5", "largest change of E between breaths (field at rest), omega = 0.5 (ideal 0)", drift, 0.0);
+    value("breather-swing-ratio", "within-breath swing of the energy reading, dx = 0.1 over dx = 0.05 (second order: 4)", swing / fine, 4.0);
+
+    int m = 19;
+    for (int i = 0; i < m; i++) {
+        double u = 0.05 * (i + 1);
+        Field g;
+        if (field_init(&g, 1201, -60.0, 0.1, 0.05, 0)) exit(1);
+        field_set_breather(&g, u, 0.5 * PI / u, 0.0);   /* a peak: the field stands still */
+        xs[i] = (float)u;
+        ya[i] = (float)sg_breather_energy(u);
+        yb[i] = (float)field_energy(&g);
+        if (i == 9) value("breather-energy-0.5", "energy of the breather at omega = 0.5 (theory 16 sqrt(1 - omega^2))", field_energy(&g), sg_breather_energy(u));
+        field_free(&g);
+    }
+    Series e[] = {{"16 sqrt(1 - omega^2)", ya, "#d62728"}, {"measured", yb, "#1f77b4"}};
+    plot("breather-energy.svg", "Energy of the breather", "angular frequency omega", "energy", m, e, 2);
+}
+
+/* 18: bound and unbound: front separation of a breather and of a pair, and the energy threshold 16. */
+static void fig_bound(void)
+{
+    double w = 0.3, v = 0.3;
+    Field b, p;
+    if (field_init(&b, 1201, -60.0, 0.1, 0.05, 0) || field_init(&p, 1201, -60.0, 0.1, 0.05, 0)) exit(1);
+    field_set_breather(&b, w, 0.0, 0.0);
+    field_set_pair(&p, v, 0.0);
+    int n = 301;
+    double wide = 0.0;
+    for (int i = 0; i < n; i++) {
+        if (i) { run(&b, 0.25); run(&p, 0.25); }
+        double c[2];
+        xs[i] = (float)(0.25 * i);
+        ya[i] = (float)(field_fronts(&b, c, 2) == 2 ? c[1] - c[0] : 0.0);
+        if (ya[i] > wide) wide = ya[i];
+        yb[i] = (float)(field_fronts(&p, c, 2) == 2 ? c[1] - c[0] : 0.0);
+        yc[i] = (float)sg_breather_separation(w);
+    }
+    field_free(&b);
+    field_free(&p);
+    value("breather-separation-0.3", "widest front separation of the breather, omega = 0.3 (theory 2 arccosh(nu/omega)/nu)", wide, sg_breather_separation(w));
+    Series s[] = {{"breather omega = 0.3", ya, "#1f77b4"}, {"pair v = 0.3", yb, "#d62728"}, {"2 arccosh(nu/omega)/nu", yc, "#888888"}};
+    plot("bound-unbound.svg", "A breather stays bound; a pair flies apart", "time t", "distance between the centres", n, s, 3);
+
+    int m = 19;
+    for (int i = 0; i < m; i++) {
+        double u = 0.05 * (i + 1);
+        xs[i] = (float)u;
+        ya[i] = (float)sg_pair_energy(u);
+        yb[i] = (float)sg_breather_energy(u);
+        yc[i] = 16.0f;
+    }
+    Series e[] = {{"pair 16 gamma(v)", ya, "#d62728"}, {"breather 16 sqrt(1-omega^2)", yb, "#1f77b4"}, {"two kinks at rest", yc, "#888888"}};
+    plot("threshold.svg", "Energy of a pair and of a breather against 16", "v (pair) or omega (breather)", "energy", m, e, 3);
+}
+
+/* 19: grid limits: error of the shift (v = 0.7) and of the breather frequency (omega = 0.3) against dx. */
+static void fig_collision_grid(void)
+{
+    double dxs[4] = {0.4, 0.2, 0.1, 0.05}, es[4], ew[4];
+    for (int i = 0; i < 4; i++) {
+        es[i] = fabs(pair_measure_shift(0.7, dxs[i], NULL, NULL) / sg_pair_shift(0.7) - 1.0);
+        ew[i] = fabs(breather_measure_frequency(0.3, dxs[i], 10, NULL, NULL, NULL) / 0.3 - 1.0);
+        xs[i] = (float)log10(dxs[i]);
+        ya[i] = (float)log10(es[i]);
+        yb[i] = (float)log10(ew[i]);
+        yc[i] = (float)(log10(ew[2]) + 2.0 * (xs[i] - log10(0.1)));   /* slope 2 through the game grid */
+    }
+    value("shift-order", "error of the v = 0.7 shift on dx = 0.1 over dx = 0.05 (second order: 4)", es[2] / es[3], 4.0);
+    value("omega-order", "error of the omega = 0.3 frequency on dx = 0.1 over dx = 0.05 (second order: 4)", ew[2] / ew[3], 4.0);
+    value("omega-0.2-dx0.05", "measured frequency of the omega = 0.2 breather on dx = 0.05", breather_measure_frequency(0.2, 0.05, 20, NULL, NULL, NULL), 0.2);
+    /* A slow kink on a coarse grid: no Peierls-Nabarro pinning is visible at this resolution. */
+    Field f;
+    if (field_init(&f, 1000, -200.0, 0.4, 0.2, 0)) exit(1);
+    field_set_kink(&f, -50.0, 0.05, 1);
+    double x0 = field_kink_position(&f);
+    run(&f, 400.0);
+    value("slow-kink-dx0.4", "mean speed of a v = 0.05 kink over t = 400 on a coarse grid dx = 0.4", (field_kink_position(&f) - x0) / 400.0, 0.05);
+    field_free(&f);
+    Series s[] = {{"shift, v = 0.7", ya, "#d62728"}, {"frequency, omega = 0.3", yb, "#1f77b4"}, {"slope 2", yc, "#888888"}};
+    plot("collision-grid.svg", "Grid error of collisions and breathers", "log10 dx (dt = dx / 2)", "log10 relative error", 4, s, 3);
+}
+
+/* 20: both exact solutions satisfy phi_tt = phi_xx - sin(phi): residual by central differences (step h = 1e-3). */
+static void check_residual(void)
+{
+    double h = 1e-3, worst[2] = {0.0, 0.0};
+    for (int k = 0; k < 2; k++)
+        for (int i = 0; i <= 200; i++)
+            for (int m = 0; m <= 40; m++) {
+                double x = -10.0 + 0.1 * i, t = -10.0 + 0.5 * m;
+                double (*u)(double, double, double) = k ? sg_breather_exact : sg_pair_exact;
+                double p = k ? 0.4 : 0.5, c = u(x, t, p);
+                double tt = (u(x, t + h, p) - 2.0 * c + u(x, t - h, p)) / (h * h);
+                double xx = (u(x + h, t, p) - 2.0 * c + u(x - h, t, p)) / (h * h);
+                double r = fabs(tt - xx + sin(c));
+                if (r > worst[k]) worst[k] = r;
+            }
+    value("pair-residual", "largest |phi_tt - phi_xx + sin phi| of the exact pair, v = 0.5, by differences h = 1e-3 (ideal 0)", worst[0], 0.0);
+    value("breather-residual", "same for the exact breather, omega = 0.4 (ideal 0)", worst[1], 0.0);
+}
+
 int main(int argc, char **argv)
 {
     snprintf(dir, sizeof dir, "%s", argc > 1 ? argv[1] : "docs/theory/figures");
@@ -419,6 +642,13 @@ int main(int argc, char **argv)
     fig_motor();
     fig_wobble();
     check_cue();
+    fig_pair();
+    fig_shift();
+    fig_pair_conserved();
+    fig_breather();
+    fig_bound();
+    fig_collision_grid();
+    check_residual();
     if (fclose(values) != 0) return 1;
     printf("theory figures written to %s\n", dir);
     return 0;

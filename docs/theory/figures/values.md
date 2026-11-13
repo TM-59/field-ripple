@@ -35,3 +35,25 @@ Units: c = 1, lengths in units of the kink's rest width, energy in units where t
 | `cue-nothing` | call 16 from the mark at v = 0.2 (0 = nothing) | 0 | 0 | 0.00e+00 |
 | `cue-estimate` | coast speed shown for v = 0.2 with the motor off (theory 0.2: nothing to add) | 0.2 | 0.2 | 0.00e+00 |
 | `cue-silent` | call once the far end is gone (0 = nothing) | 0 | 0 | 0.00e+00 |
+| `pair-gap-v0.5` | largest |phi - Perring-Skyrme| (rad) from t = -40 to 40, v = 0.5, dx = 0.1 (ideal 0) | 0.100452 | 0 | 1.00e-01 |
+| `shift-v0.1` | forward shift after the collision at v = 0.1 (theory 2 sqrt(1 - v^2) ln(1/v)) | 4.58317 | 4.58209 | 2.36e-04 |
+| `shift-v0.5` | forward shift after the collision at v = 0.5 (theory 2 sqrt(1 - v^2) ln(1/v)) | 1.20079 | 1.20057 | 1.88e-04 |
+| `speed-out-v0.5` | fitted speed after the collision against before it, v = 0.5 (theory: equal) | 0.499725 | 0.499726 | 3.02e-06 |
+| `shift-v0.9` | forward shift after the collision at v = 0.9, dx = 0.1 | 0.0911437 | 0.0918512 | 7.70e-03 |
+| `shift-v0.95` | forward shift at v = 0.95, dx = 0.1: the width 1/gamma = 0.31 is three grid cells | 0.035059 | 0.0320327 | 9.45e-02 |
+| `pair-energy-v0.5` | energy of the superposed pair at v = 0.5 (theory 16 gamma) | 18.4615 | 18.4752 | 7.42e-04 |
+| `pair-energy-after` | energy at t = 100 (60 t after the collision) against the start (theory: equal) | 18.4615 | 18.4615 | 2.17e-06 |
+| `pair-momentum` | largest |P| of the symmetric pair through the collision (theory 0) | 5.78369e-13 | 0 | 5.78e-13 |
+| `breather-omega-0.3` | measured angular frequency over 20 periods, omega = 0.3 | 0.301067 | 0.3 | 3.56e-03 |
+| `breather-omega-0.5` | measured angular frequency over 20 periods, omega = 0.5 | 0.500387 | 0.5 | 7.75e-04 |
+| `breather-omega-0.8` | measured angular frequency over 20 periods, omega = 0.8 | 0.800116 | 0.8 | 1.44e-04 |
+| `breather-drift-0.5` | largest change of E between breaths (field at rest), omega = 0.5 (ideal 0) | 7.86608e-07 | 0 | 7.87e-07 |
+| `breather-swing-ratio` | within-breath swing of the energy reading, dx = 0.1 over dx = 0.05 (second order: 4) | 3.99046 | 4 | 2.38e-03 |
+| `breather-energy-0.5` | energy of the breather at omega = 0.5 (theory 16 sqrt(1 - omega^2)) | 13.8485 | 13.8564 | 5.73e-04 |
+| `breather-separation-0.3` | widest front separation of the breather, omega = 0.3 (theory 2 arccosh(nu/omega)/nu) | 3.8168 | 3.82471 | 2.07e-03 |
+| `shift-order` | error of the v = 0.7 shift on dx = 0.1 over dx = 0.05 (second order: 4) | 3.9982 | 4 | 4.50e-04 |
+| `omega-order` | error of the omega = 0.3 frequency on dx = 0.1 over dx = 0.05 (second order: 4) | 4.0032 | 4 | 8.01e-04 |
+| `omega-0.2-dx0.05` | measured frequency of the omega = 0.2 breather on dx = 0.05 | 0.200464 | 0.2 | 2.32e-03 |
+| `slow-kink-dx0.4` | mean speed of a v = 0.05 kink over t = 400 on a coarse grid dx = 0.4 | 0.0496527 | 0.05 | 6.95e-03 |
+| `pair-residual` | largest |phi_tt - phi_xx + sin phi| of the exact pair, v = 0.5, by differences h = 1e-3 (ideal 0) | 8.70164e-07 | 0 | 8.70e-07 |
+| `breather-residual` | same for the exact breather, omega = 0.4 (ideal 0) | 9.27349e-07 | 0 | 9.27e-07 |

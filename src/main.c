@@ -9,6 +9,7 @@
 
 #include "field.h"
 #include "gif.h"
+#include "pair.h"
 #include "render.h"
 #include "svg.h"
 
@@ -141,6 +142,57 @@ static int gif_demo(const char *path)
     return gif_close(g) ? 1 : 0;
 }
 
+/* Colour index (1..15) for phi in [-2 pi, 2 pi]: blue below zero, black at zero, amber above. Index 0 is the gap. */
+static unsigned char map_colour(double phi)
+{
+    double u = phi / (2.0 * PI);
+    if (u < -1.0) u = -1.0;
+    if (u > 1.0) u = 1.0;
+    int k = (int)lround(u * 7.0);
+    return (unsigned char)(8 + k);
+}
+
+/* Space-time maps written as one still GIF: left, a kink-antikink pair at v = 0.5 from the exact solution at
+ * t = -40 to t = 40; right, a breather at omega = 0.3 over two periods. x runs across (-20..20), t runs down. */
+static int collide(const char *dir)
+{
+    enum { PW = 320, PH = 320, GAP = 16, W = 2 * PW + GAP };
+    static unsigned char px[W * PH];
+    unsigned char pal[GIF_COLOURS][3];
+    pal[0][0] = 246; pal[0][1] = 246; pal[0][2] = 246;
+    for (int k = -7; k <= 7; k++) {
+        double a = abs(k) / 7.0;
+        unsigned char *c = pal[8 + k];
+        c[0] = (unsigned char)(k > 0 ? 20 + 235 * a : 20 + 40 * a);
+        c[1] = (unsigned char)(k > 0 ? 20 + 165 * a : 20 + 150 * a);
+        c[2] = (unsigned char)(k > 0 ? 20 + 40 * a : 20 + 235 * a);
+    }
+    memset(px, 0, sizeof px);
+    for (int panel = 0; panel < 2; panel++) {
+        Field f;
+        if (field_init(&f, 1201, -60.0, DX, DT, 0)) return 1;
+        double t0 = panel == 0 ? -40.0 : 0.0, span = panel == 0 ? 80.0 : 2.0 * 2.0 * PI / 0.3;
+        if (panel == 0) field_set_pair(&f, 0.5, t0);
+        else field_set_breather(&f, 0.3, 0.0, 0.0);
+        int total = (int)lround(span / DT), done = 0;
+        for (int row = 0; row < PH; row++) {
+            int target = (int)lround((double)total * row / (PH - 1));
+            for (; done < target; done++) field_step(&f);
+            for (int c = 0; c < PW; c++)
+                px[row * W + panel * (PW + GAP) + c] = map_colour(field_value_at(&f, -20.0 + 40.0 * (c + 0.5) / PW));
+        }
+        field_free(&f);
+    }
+    char path[512];
+    snprintf(path, sizeof path, "%s/collision.gif", dir);
+    Gif *g = gif_open(path, W, PH, pal, 100);
+    if (!g || gif_frame(g, px, 0) || gif_close(g)) return 1;
+    double in, out, shift = pair_measure_shift(0.5, DX, &in, &out);
+    printf("pair v=0.5 measured shift %.5f, theory %.5f; speeds %.5f -> %.5f\n", shift, sg_pair_shift(0.5), in, out);
+    printf("breather omega=0.3 measured %.6f\n", breather_measure_frequency(0.3, DX, 20, NULL, NULL, NULL));
+    return 0;
+}
+
 static struct termios saved;
 static void restore(void) { tcsetattr(STDIN_FILENO, TCSANOW, &saved); fputs("\033[?25h", stdout); }
 
@@ -197,6 +249,7 @@ int main(int argc, char **argv)
 {
     if (argc > 1 && strcmp(argv[1], "--headless") == 0) return headless(argc > 2 ? argv[2] : ".");
     if (argc > 1 && strcmp(argv[1], "--snapshot") == 0) return snapshot();
+    if (argc > 1 && strcmp(argv[1], "--collide") == 0) return collide(argc > 2 ? argv[2] : ".");
     if (argc > 1 && strcmp(argv[1], "--gif") == 0) return gif_demo(argc > 2 ? argv[2] : "demo.gif");
     return play();
 }

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" width="720" height="400" font-family="sans-serif" font-size="12">
+<rect width="720" height="400" fill="#ffffff"/>
+<text x="70" y="26" font-size="16" font-weight="bold" fill="#222">Forward shift of each soliton after the collision</text>
+<line x1="70.0" y1="44" x2="70.0" y2="344" stroke="#e3e3e3"/>
+<line x1="70" y1="344.0" x2="700" y2="344.0" stroke="#e3e3e3"/>
+<text x="70.0" y="362" text-anchor="middle" fill="#444">0.05</text>
+<text x="62" y="348.0" text-anchor="end" fill="#444">-0.266</text>
+<line x1="196.0" y1="44" x2="196.0" y2="344" stroke="#e3e3e3"/>
+<line x1="70" y1="284.0" x2="700" y2="284.0" stroke="#e3e3e3"/>
+<text x="196.0" y="362" text-anchor="middle" fill="#444">0.23</text>
+<text x="62" y="288.0" text-anchor="end" fill="#444">1.04</text>
+<line x1="322.0" y1="44" x2="322.0" y2="344" stroke="#e3e3e3"/>
+<line x1="70" y1="224.0" x2="700" y2="224.0" stroke="#e3e3e3"/>
+<text x="322.0" y="362" text-anchor="middle" fill="#444">0.41</text>
+<text x="62" y="228.0" text-anchor="end" fill="#444">2.35</text>
+<line x1="448.0" y1="44" x2="448.0" y2="344" stroke="#e3e3e3"/>
+<line x1="70" y1="164.0" x2="700" y2="164.0" stroke="#e3e3e3"/>
+<text x="448.0" y="362" text-anchor="middle" fill="#444">0.59</text>
+<text x="62" y="168.0" text-anchor="end" fill="#444">3.66</text>
+<line x1="574.0" y1="44" x2="574.0" y2="344" stroke="#e3e3e3"/>
+<line x1="70" y1="104.0" x2="700" y2="104.0" stroke="#e3e3e3"/>
+<text x="574.0" y="362" text-anchor="middle" fill="#444">0.77</text>
+<text x="62" y="108.0" text-anchor="end" fill="#444">4.97</text>
+<line x1="700.0" y1="44" x2="700.0" y2="344" stroke="#e3e3e3"/>
+<line x1="70" y1="44.0" x2="700" y2="44.0" stroke="#e3e3e3"/>
+<text x="700.0" y="362" text-anchor="middle" fill="#444">0.95</text>
+<text x="62" y="48.0" text-anchor="end" fill="#444">6.28</text>
+<rect x="70" y="44" width="630" height="300" fill="none" stroke="#888"/>
+<text x="385" y="388" text-anchor="middle" fill="#222">speed v (c = 1)</text>
+<text transform="translate(16 194) rotate(-90)" text-anchor="middle" fill="#222">shift</text>
+<polyline fill="none" stroke="#d62728" stroke-width="2" points="70.0,57.7 105.0,121.9 140.0,160.0 175.0,187.4 210.0,208.8 245.0,226.6 280.0,241.7 315.0,254.9 350.0,266.5 385.0,276.8 420.0,286.1 455.0,294.4 490.0,301.8 525.0,308.5 560.0,314.4 595.0,319.6 630.0,324.0 665.0,327.6 700.0,330.4 "/>
+<rect x="78" y="52" width="12" height="12" fill="#d62728"/><text x="96" y="63" fill="#222">2 sqrt(1-v^2) ln(1/v)</text>
+<polyline fill="none" stroke="#1f77b4" stroke-width="2" points="70.0,57.6 105.0,121.9 140.0,159.9 175.0,187.3 210.0,208.8 245.0,226.6 280.0,241.7 315.0,254.9 350.0,266.5 385.0,276.8 420.0,286.1 455.0,294.4 490.0,301.8 525.0,308.5 560.0,314.4 595.0,319.6 630.0,324.0 665.0,327.7 700.0,330.2 "/>
+<rect x="228" y="52" width="12" height="12" fill="#1f77b4"/><text x="246" y="63" fill="#222">measured</text>
+</svg>
