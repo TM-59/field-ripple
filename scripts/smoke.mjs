@@ -1,12 +1,13 @@
 // Local only. Screenshots capture the real C/WASM observatory under a URL subpath.
-import { chromium } from 'playwright';
-import { createServer } from 'node:http';
-import { readFile, mkdir, writeFile, stat } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
-import path from 'node:path';
-import os from 'node:os';
+
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
+import os from 'node:os';
+import path from 'node:path';
+import { chromium } from 'playwright';
 
 const libs = path.join(os.homedir(), '.local/lib/chromium-deps/usr/lib/x86_64-linux-gnu');
 if (existsSync(libs))
@@ -180,7 +181,7 @@ try {
   async function night(route, ford, shots) {
     const p = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     track(p);
-    await p.goto(url + '?rate=3');
+    await p.goto(`${url}?rate=3`);
     await p.waitForFunction(() => !document.getElementById('line-start').disabled);
     await p.locator('#line-start').click();
     const seen = [],
@@ -548,7 +549,7 @@ try {
     externalRequests: external,
     images,
   };
-  await writeFile('out/smoke.json', JSON.stringify(summary, null, 2) + '\n');
+  await writeFile('out/smoke.json', `${JSON.stringify(summary, null, 2)}\n`);
   console.log(JSON.stringify(summary, null, 2));
 } finally {
   if (browser) await browser.close();

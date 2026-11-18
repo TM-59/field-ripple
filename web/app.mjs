@@ -1,5 +1,5 @@
-import createField from './field.mjs';
 import { initCollide } from './collide.mjs';
+import createField from './field.mjs';
 
 const $ = (id) => document.getElementById(id);
 const keys = new Set(),
