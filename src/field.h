@@ -8,7 +8,7 @@
 typedef struct {
     int n, periodic;
     double x0, dx, dt;
-    double eps;                     /* uniform bias that acts as a force on a kink */
+    double eps; /* uniform bias that acts as a force on a kink */
     double *prev, *cur, *next;
 } Field;
 

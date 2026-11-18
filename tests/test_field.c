@@ -6,20 +6,21 @@
 
 static int failures;
 
-#define CHECK(cond, ...)                                      \
-    do {                                                      \
-        if (!(cond)) {                                        \
-            failures++;                                       \
-            printf("FAIL %s:%d: ", __FILE__, __LINE__);       \
-            printf(__VA_ARGS__);                              \
-            printf("\n");                                     \
-        }                                                     \
+#define CHECK(cond, ...)                                                                           \
+    do {                                                                                           \
+        if (!(cond)) {                                                                             \
+            failures++;                                                                            \
+            printf("FAIL %s:%d: ", __FILE__, __LINE__);                                            \
+            printf(__VA_ARGS__);                                                                   \
+            printf("\n");                                                                          \
+        }                                                                                          \
     } while (0)
 
 static void run(Field *f, double t)
 {
     int steps = (int)lround(t / f->dt);
-    for (int k = 0; k < steps; k++) field_step(f);
+    for (int k = 0; k < steps; k++)
+        field_step(f);
 }
 
 static void test_static_kink_stays_put_with_energy_eight(void)
@@ -55,7 +56,8 @@ static void test_energy_is_gamma_times_rest_energy(void)
     double e0 = field_energy(&f);
     CHECK(fabs(e0 / (8.0 * gamma) - 1.0) < 0.01, "E %.4f vs 8 gamma %.4f", e0, 8.0 * gamma);
     run(&f, 40.0);
-    CHECK(fabs(field_energy(&f) / e0 - 1.0) < 1e-3, "energy drift %.2e", field_energy(&f) / e0 - 1.0);
+    CHECK(fabs(field_energy(&f) / e0 - 1.0) < 1e-3, "energy drift %.2e",
+          field_energy(&f) / e0 - 1.0);
     field_free(&f);
 }
 
@@ -69,8 +71,8 @@ static void test_kink_is_lorentz_contracted(void)
         field_set_kink(&f, -20.0, speeds[i], 1);
         run(&f, 20.0);
         /* phi_x = 2 gamma sech(gamma (x - v t)): the peak grows like gamma as the width shrinks */
-        CHECK(fabs(field_max_gradient(&f) / (2.0 * gamma) - 1.0) < 0.02, "v=%.1f peak %.4f vs %.4f", speeds[i],
-              field_max_gradient(&f), 2.0 * gamma);
+        CHECK(fabs(field_max_gradient(&f) / (2.0 * gamma) - 1.0) < 0.02, "v=%.1f peak %.4f vs %.4f",
+              speeds[i], field_max_gradient(&f), 2.0 * gamma);
         field_free(&f);
     }
 }
@@ -83,7 +85,8 @@ static void test_small_waves_follow_the_massive_dispersion(void)
     CHECK(field_init(&f, n, 0.0, length / n, 0.02, 1) == 0, "allocation failed");
     field_set_wave(&f, amp, k);
     int steps = (int)(3.14159265358979 / omega / f.dt);
-    for (int s = 0; s < steps; s++) field_step(&f);
+    for (int s = 0; s < steps; s++)
+        field_step(&f);
     double expected = amp * cos(omega * steps * f.dt);
     CHECK(fabs(f.cur[0] - expected) < 0.02 * amp, "phi(0) %.6e vs %.6e", f.cur[0], expected);
     field_free(&f);
@@ -115,7 +118,8 @@ static void test_render_fits_the_screen(void)
     static char buf[RENDER_COLS * RENDER_ROWS * 2];
     size_t used = render_frame(&f, 0.0, 3.0, buf, sizeof buf);
     int lines = 0;
-    for (size_t i = 0; i < used; i++) lines += buf[i] == '\n';
+    for (size_t i = 0; i < used; i++)
+        lines += buf[i] == '\n';
     CHECK(lines == RENDER_ROWS, "expected %d lines, got %d", RENDER_ROWS, lines);
     CHECK(render_frame(&f, 0.0, 3.0, buf, 8) == 0, "tiny buffer must be refused");
     field_free(&f);

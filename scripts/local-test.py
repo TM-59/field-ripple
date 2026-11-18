@@ -26,16 +26,41 @@ def main() -> int:
     latest.unlink(missing_ok=True)
     now = datetime.now(UTC)
     run_id = now.strftime("%Y%m%dT%H%M%S%fZ") + "-" + uuid.uuid4().hex[:8]
-    commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
-    dirty = bool(subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, check=True).stdout)
+    commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    dirty = bool(
+        subprocess.run(
+            ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
+        ).stdout
+    )
     summary = {
-        "schema_version": 1, "run_id": run_id, "repository": "TM-59/field-ripple",
-        "commit": commit, "dirty": dirty, "started_at": now.isoformat(), "finished_at": now.isoformat(),
-        "duration_seconds": 0, "status": "incomplete", "exit_code": None,
-        "environment": {"os": platform.system(), "architecture": platform.machine(), "tools": {}, "jobs": 1, "seed": 42},
+        "schema_version": 1,
+        "run_id": run_id,
+        "repository": "TM-59/field-ripple",
+        "commit": commit,
+        "dirty": dirty,
+        "started_at": now.isoformat(),
+        "finished_at": now.isoformat(),
+        "duration_seconds": 0,
+        "status": "incomplete",
+        "exit_code": None,
+        "environment": {
+            "os": platform.system(),
+            "architecture": platform.machine(),
+            "tools": {},
+            "jobs": 1,
+            "seed": 42,
+        },
         "counts": dict.fromkeys(("tests", "failures", "errors", "skipped"), 0),
-        "coverage": {"status": "not_measured", "line_percent": None, "branch_percent": None, "reason": "Coverage is not collected."},
-        "metrics": [], "suites": [],
+        "coverage": {
+            "status": "not_measured",
+            "line_percent": None,
+            "branch_percent": None,
+            "reason": "Coverage is not collected.",
+        },
+        "metrics": [],
+        "suites": [],
     }
 
     def publish(data: dict) -> None:
@@ -73,8 +98,12 @@ def main() -> int:
             return result.returncode or (0 if data["status"] == "pass" else 1)
         except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
             print(f"local test failed: {error}", file=sys.stderr)
-            summary.update(status="error", exit_code=1, finished_at=datetime.now(UTC).isoformat(),
-                           duration_seconds=round(time.monotonic() - started, 3))
+            summary.update(
+                status="error",
+                exit_code=1,
+                finished_at=datetime.now(UTC).isoformat(),
+                duration_seconds=round(time.monotonic() - started, 3),
+            )
             publish(summary)
             return 1
 

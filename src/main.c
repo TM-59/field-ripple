@@ -23,7 +23,8 @@ static float gradient_at(const Field *f, double x)
 {
     double u = (x - f->x0) / f->dx;
     int j = (int)floor(u);
-    if (j < 1 || j >= f->n - 2) return 0.0f;
+    if (j < 1 || j >= f->n - 2)
+        return 0.0f;
     double a = field_gradient(f, j), b = field_gradient(f, j + 1);
     return (float)(a + (b - a) * (u - j));
 }
@@ -36,45 +37,59 @@ static int headless(const char *dir)
     double speeds[3] = {0.0, 0.6, 0.9};
     enum { M = 241 };
     static float s[M], prof[3][M];
-    for (int i = 0; i < M; i++) s[i] = -6.0f + 0.05f * i;
+    for (int i = 0; i < M; i++)
+        s[i] = -6.0f + 0.05f * i;
     for (int k = 0; k < 3; k++) {
-        if (field_init(&f, GRID, -100.0, DX, DT, 0)) return 1;
+        if (field_init(&f, GRID, -100.0, DX, DT, 0))
+            return 1;
         field_set_kink(&f, -20.0, speeds[k], 1);
-        for (int n = 0; n < 400; n++) field_step(&f);
+        for (int n = 0; n < 400; n++)
+            field_step(&f);
         double pos = field_kink_position(&f);
-        for (int i = 0; i < M; i++) prof[k][i] = gradient_at(&f, pos + s[i]);
+        for (int i = 0; i < M; i++)
+            prof[k][i] = gradient_at(&f, pos + s[i]);
         field_free(&f);
     }
     snprintf(path, sizeof path, "%s/profile.svg", dir);
-    Series sp[] = {{"v = 0", prof[0], "#1f77b4"}, {"v = 0.6c", prof[1], "#ff7f0e"}, {"v = 0.9c", prof[2], "#d62728"}};
-    if (svg_plot(path, "Kink energy density profile phi_x: Lorentz contraction", "x - X(t)", "phi_x", s, M, sp, 3)) return 1;
+    Series sp[] = {{"v = 0", prof[0], "#1f77b4"},
+                   {"v = 0.6c", prof[1], "#ff7f0e"},
+                   {"v = 0.9c", prof[2], "#d62728"}};
+    if (svg_plot(path, "Kink energy density profile phi_x: Lorentz contraction", "x - X(t)",
+                 "phi_x", s, M, sp, 3))
+        return 1;
 
     enum { N = 400 };
     static float t[N], de[N], vs[N], vt[N];
     double eps = 0.01, force = 2.0 * PI * eps, e0;
-    if (field_init(&f, GRID, -100.0, DX, DT, 0)) return 1;
+    if (field_init(&f, GRID, -100.0, DX, DT, 0))
+        return 1;
     field_set_kink(&f, -20.0, 0.8, 1);
     e0 = field_energy(&f);
     for (int i = 0; i < N; i++) {
         t[i] = (float)(i * 0.25);
         de[i] = (float)(field_energy(&f) / e0 - 1.0);
-        for (int k = 0; k < 5; k++) field_step(&f);
+        for (int k = 0; k < 5; k++)
+            field_step(&f);
     }
     field_free(&f);
     snprintf(path, sizeof path, "%s/energy.svg", dir);
     Series se[] = {{"E / E0 - 1", de, "#2ca02c"}};
-    if (svg_plot(path, "Energy conservation of a 0.8c kink", "t", "relative drift", t, N, se, 1)) return 1;
+    if (svg_plot(path, "Energy conservation of a 0.8c kink", "t", "relative drift", t, N, se, 1))
+        return 1;
 
-    if (field_init(&f, GRID, -100.0, DX, DT, 0)) return 1;
+    if (field_init(&f, GRID, -100.0, DX, DT, 0))
+        return 1;
     f.eps = eps;
     field_set_kink(&f, 0.0, 0.0, 1);
     snprintf(path, sizeof path, "%s/run.csv", dir);
     FILE *csv = fopen(path, "w");
-    if (!csv) return 1;
+    if (!csv)
+        return 1;
     fprintf(csv, "t,x,speed_sim,speed_theory\n");
     double prev = field_kink_position(&f);
     for (int i = 0; i < N; i++) {
-        for (int k = 0; k < 5; k++) field_step(&f);
+        for (int k = 0; k < 5; k++)
+            field_step(&f);
         double tt = (i + 1) * 0.25, x = field_kink_position(&f), p = force * tt;
         t[i] = (float)tt;
         vs[i] = (float)fabs((x - prev) / 0.25);
@@ -86,7 +101,9 @@ static int headless(const char *dir)
     field_free(&f);
     snprintf(path, sizeof path, "%s/push.svg", dir);
     Series sv[] = {{"simulation", vs, "#d62728"}, {"theory p/E", vt, "#1f77b4"}};
-    if (svg_plot(path, "A constant bias pushes the kink: speed saturates below c", "t", "v", t, N, sv, 2)) return 1;
+    if (svg_plot(path, "A constant bias pushes the kink: speed saturates below c", "t", "v", t, N,
+                 sv, 2))
+        return 1;
     printf("v(t=100): sim %.3f, theory %.3f\n", vs[399], vt[399]);
     return 0;
 }
@@ -94,12 +111,15 @@ static int headless(const char *dir)
 static int snapshot(void)
 {
     Field f;
-    if (field_init(&f, GRID, -100.0, DX, DT, 0)) return 1;
+    if (field_init(&f, GRID, -100.0, DX, DT, 0))
+        return 1;
     field_set_kink(&f, 0.0, 0.8, 1);
-    for (int n = 0; n < 200; n++) field_step(&f);
+    for (int n = 0; n < 200; n++)
+        field_step(&f);
     static char buf[RENDER_COLS * RENDER_ROWS * 4];
     int ok = render_frame(&f, field_kink_position(&f), TARGET, buf, sizeof buf) != 0;
-    if (ok) fputs(buf, stdout);
+    if (ok)
+        fputs(buf, stdout);
     field_free(&f);
     return ok ? 0 : 1;
 }
@@ -110,56 +130,70 @@ static int gif_colour(char c) { return c == '|' ? 2 : 3; }
 static int gif_demo(const char *path)
 {
     Field f;
-    if (field_init(&f, GRID, -100.0, DX, DT, 0)) return 1;
+    if (field_init(&f, GRID, -100.0, DX, DT, 0))
+        return 1;
     field_set_kink(&f, 0.0, 0.0, 1);
-    unsigned char pal[GIF_COLOURS][3] = {{8, 10, 24}, {235, 235, 235}, {255, 205, 60}, {90, 210, 255}};
+    unsigned char pal[GIF_COLOURS][3] = {
+        {8, 10, 24}, {235, 235, 235}, {255, 205, 60}, {90, 210, 255}};
     const int scale = 3, cw = RENDER_COLS * 6 * scale, ch = RENDER_ROWS * 9 * scale;
     static unsigned char px[RENDER_COLS * 6 * 3 * RENDER_ROWS * 9 * 3];
     static char buf[RENDER_COLS * RENDER_ROWS * 4];
     Gif *g = gif_open(path, cw, ch, pal, 6);
-    if (!g) return 1;
+    if (!g)
+        return 1;
     enum { MAX_FRAMES = 140, STEPS = 12 };
     double x = field_kink_position(&f), prev = x;
     int braking = 0;
     for (int k = 0; k < MAX_FRAMES; k++) {
         double v = (x - prev) / (STEPS * DT);
-        if (!braking && x >= 12.0) braking = 1;
-        if (braking && v <= 0.0) break;
+        if (!braking && x >= 12.0)
+            braking = 1;
+        if (braking && v <= 0.0)
+            break;
         f.eps = braking ? 0.05 : -0.05;
         render_frame(&f, x, TARGET, buf, sizeof buf);
         gif_draw_text(px, cw, ch, buf, scale, gif_colour);
-        if (gif_frame(g, px, 0)) return 1;
-        for (int n = 0; n < STEPS; n++) field_step(&f);
+        if (gif_frame(g, px, 0))
+            return 1;
+        for (int n = 0; n < STEPS; n++)
+            field_step(&f);
         prev = x;
         x = field_kink_position(&f);
     }
     f.eps = 0.0;
     render_frame(&f, x, TARGET, buf, sizeof buf);
     gif_draw_text(px, cw, ch, buf, scale, gif_colour);
-    if (gif_frame(g, px, 250)) return 1;
+    if (gif_frame(g, px, 250))
+        return 1;
     printf("kink stopped at x=%.2f\n", x);
     field_free(&f);
     return gif_close(g) ? 1 : 0;
 }
 
-/* Colour index (1..15) for phi in [-2 pi, 2 pi]: blue below zero, black at zero, amber above. Index 0 is the gap. */
+/* Colour index (1..15) for phi in [-2 pi, 2 pi]: blue below zero, black at zero, amber above. Index
+ * 0 is the gap. */
 static unsigned char map_colour(double phi)
 {
     double u = phi / (2.0 * PI);
-    if (u < -1.0) u = -1.0;
-    if (u > 1.0) u = 1.0;
+    if (u < -1.0)
+        u = -1.0;
+    if (u > 1.0)
+        u = 1.0;
     int k = (int)lround(u * 7.0);
     return (unsigned char)(8 + k);
 }
 
-/* Space-time maps written as one still GIF: left, a kink-antikink pair at v = 0.5 from the exact solution at
- * t = -40 to t = 40; right, a breather at omega = 0.3 over two periods. x runs across (-20..20), t runs down. */
+/* Space-time maps written as one still GIF: left, a kink-antikink pair at v = 0.5 from the exact
+ * solution at t = -40 to t = 40; right, a breather at omega = 0.3 over two periods. x runs across
+ * (-20..20), t runs down. */
 static int collide(const char *dir)
 {
     enum { PW = 320, PH = 320, GAP = 16, W = 2 * PW + GAP };
     static unsigned char px[W * PH];
     unsigned char pal[GIF_COLOURS][3];
-    pal[0][0] = 246; pal[0][1] = 246; pal[0][2] = 246;
+    pal[0][0] = 246;
+    pal[0][1] = 246;
+    pal[0][2] = 246;
     for (int k = -7; k <= 7; k++) {
         double a = abs(k) / 7.0;
         unsigned char *c = pal[8 + k];
@@ -170,37 +204,53 @@ static int collide(const char *dir)
     memset(px, 0, sizeof px);
     for (int panel = 0; panel < 2; panel++) {
         Field f;
-        if (field_init(&f, 1201, -60.0, DX, DT, 0)) return 1;
+        if (field_init(&f, 1201, -60.0, DX, DT, 0))
+            return 1;
         double t0 = panel == 0 ? -40.0 : 0.0, span = panel == 0 ? 80.0 : 2.0 * 2.0 * PI / 0.3;
-        if (panel == 0) field_set_pair(&f, 0.5, t0);
-        else field_set_breather(&f, 0.3, 0.0, 0.0);
+        if (panel == 0)
+            field_set_pair(&f, 0.5, t0);
+        else
+            field_set_breather(&f, 0.3, 0.0, 0.0);
         int total = (int)lround(span / DT), done = 0;
         for (int row = 0; row < PH; row++) {
             int target = (int)lround((double)total * row / (PH - 1));
-            for (; done < target; done++) field_step(&f);
+            for (; done < target; done++)
+                field_step(&f);
             for (int c = 0; c < PW; c++)
-                px[row * W + panel * (PW + GAP) + c] = map_colour(field_value_at(&f, -20.0 + 40.0 * (c + 0.5) / PW));
+                px[row * W + panel * (PW + GAP) + c] =
+                    map_colour(field_value_at(&f, -20.0 + 40.0 * (c + 0.5) / PW));
         }
         field_free(&f);
     }
     char path[512];
     snprintf(path, sizeof path, "%s/collision.gif", dir);
     Gif *g = gif_open(path, W, PH, pal, 100);
-    if (!g || gif_frame(g, px, 0) || gif_close(g)) return 1;
+    if (!g || gif_frame(g, px, 0) || gif_close(g))
+        return 1;
     double in, out, shift = pair_measure_shift(0.5, DX, &in, &out);
-    printf("pair v=0.5 measured shift %.5f, theory %.5f; speeds %.5f -> %.5f\n", shift, sg_pair_shift(0.5), in, out);
-    printf("breather omega=0.3 measured %.6f\n", breather_measure_frequency(0.3, DX, 20, NULL, NULL, NULL));
+    printf("pair v=0.5 measured shift %.5f, theory %.5f; speeds %.5f -> %.5f\n", shift,
+           sg_pair_shift(0.5), in, out);
+    printf("breather omega=0.3 measured %.6f\n",
+           breather_measure_frequency(0.3, DX, 20, NULL, NULL, NULL));
     return 0;
 }
 
 static struct termios saved;
-static void restore(void) { tcsetattr(STDIN_FILENO, TCSANOW, &saved); fputs("\033[?25h", stdout); }
+static void restore(void)
+{
+    tcsetattr(STDIN_FILENO, TCSANOW, &saved);
+    fputs("\033[?25h", stdout);
+}
 
 static int play(void)
 {
-    if (!isatty(STDIN_FILENO)) { fputs("interactive mode needs a terminal; try --snapshot\n", stderr); return 1; }
+    if (!isatty(STDIN_FILENO)) {
+        fputs("interactive mode needs a terminal; try --snapshot\n", stderr);
+        return 1;
+    }
     Field f;
-    if (field_init(&f, GRID, -100.0, DX, DT, 0)) return 1;
+    if (field_init(&f, GRID, -100.0, DX, DT, 0))
+        return 1;
     field_set_kink(&f, 0.0, 0.0, 1);
     tcgetattr(STDIN_FILENO, &saved);
     struct termios raw = saved;
@@ -219,13 +269,18 @@ static int play(void)
         char c;
         f.eps = 0.0;
         while (read(STDIN_FILENO, &c, 1) == 1) {
-            if (c == 'q') return 0;
-            if (c == 'p') paused = !paused;
-            if (c == 'd') f.eps = -0.01;   /* a bias eps pushes the kink with force -2 pi eps */
-            if (c == 'a') f.eps = 0.01;
+            if (c == 'q')
+                return 0;
+            if (c == 'p')
+                paused = !paused;
+            if (c == 'd')
+                f.eps = -0.01; /* a bias eps pushes the kink with force -2 pi eps */
+            if (c == 'a')
+                f.eps = 0.01;
         }
         if (!paused) {
-            for (int k = 0; k < 6; k++) field_step(&f);
+            for (int k = 0; k < 6; k++)
+                field_step(&f);
             t += 6 * DT;
         }
         double x = field_kink_position(&f);
@@ -233,23 +288,32 @@ static int play(void)
             v = (x - prev_x) / (5 * 6 * DT);
             prev_x = x;
         }
-        if (isnan(x)) x = 0.0;
+        if (isnan(x))
+            x = 0.0;
         double gamma = fabs(v) < 0.999 ? 1.0 / sqrt(1.0 - v * v) : 1.0;
         render_frame(&f, x, TARGET, buf, sizeof buf);
         printf("\033[H%s", buf);
-        printf("t %6.1f  kink at %6.2f  v %+.3f  gamma %.2f  width ~ %.2f    \n", t, x, v, gamma, 1.0 / gamma);
+        printf("t %6.1f  kink at %6.2f  v %+.3f  gamma %.2f  width ~ %.2f    \n", t, x, v, gamma,
+               1.0 / gamma);
         puts("a/d push left/right  p pause  q quit    park the kink on the | mark");
         fflush(stdout);
-        if (fabs(x - TARGET) < 0.5 && fabs(v) < 0.03) { puts("\nParked on target!"); return 0; }
+        if (fabs(x - TARGET) < 0.5 && fabs(v) < 0.03) {
+            puts("\nParked on target!");
+            return 0;
+        }
         nanosleep(&tick, NULL);
     }
 }
 
 int main(int argc, char **argv)
 {
-    if (argc > 1 && strcmp(argv[1], "--headless") == 0) return headless(argc > 2 ? argv[2] : ".");
-    if (argc > 1 && strcmp(argv[1], "--snapshot") == 0) return snapshot();
-    if (argc > 1 && strcmp(argv[1], "--collide") == 0) return collide(argc > 2 ? argv[2] : ".");
-    if (argc > 1 && strcmp(argv[1], "--gif") == 0) return gif_demo(argc > 2 ? argv[2] : "demo.gif");
+    if (argc > 1 && strcmp(argv[1], "--headless") == 0)
+        return headless(argc > 2 ? argv[2] : ".");
+    if (argc > 1 && strcmp(argv[1], "--snapshot") == 0)
+        return snapshot();
+    if (argc > 1 && strcmp(argv[1], "--collide") == 0)
+        return collide(argc > 2 ? argv[2] : ".");
+    if (argc > 1 && strcmp(argv[1], "--gif") == 0)
+        return gif_demo(argc > 2 ? argv[2] : "demo.gif");
     return play();
 }
