@@ -19,8 +19,9 @@ static int failures;
 static void run(Field *f, double t)
 {
     int steps = (int)lround(t / f->dt);
-    for (int k = 0; k < steps; k++)
+    for (int k = 0; k < steps; k++) {
         field_step(f);
+    }
 }
 
 static void test_static_kink_stays_put_with_energy_eight(void)
@@ -85,8 +86,9 @@ static void test_small_waves_follow_the_massive_dispersion(void)
     CHECK(field_init(&f, n, 0.0, length / n, 0.02, 1) == 0, "allocation failed");
     field_set_wave(&f, amp, k);
     int steps = (int)(3.14159265358979 / omega / f.dt);
-    for (int s = 0; s < steps; s++)
+    for (int s = 0; s < steps; s++) {
         field_step(&f);
+    }
     double expected = amp * cos(omega * steps * f.dt);
     CHECK(fabs(f.cur[0] - expected) < 0.02 * amp, "phi(0) %.6e vs %.6e", f.cur[0], expected);
     field_free(&f);
@@ -118,8 +120,9 @@ static void test_render_fits_the_screen(void)
     static char buf[RENDER_COLS * RENDER_ROWS * 2];
     size_t used = render_frame(&f, 0.0, 3.0, buf, sizeof buf);
     int lines = 0;
-    for (size_t i = 0; i < used; i++)
+    for (size_t i = 0; i < used; i++) {
         lines += buf[i] == '\n';
+    }
     CHECK(lines == RENDER_ROWS, "expected %d lines, got %d", RENDER_ROWS, lines);
     CHECK(render_frame(&f, 0.0, 3.0, buf, 8) == 0, "tiny buffer must be refused");
     field_free(&f);

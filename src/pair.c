@@ -81,8 +81,9 @@ int field_fronts(const Field *f, double *xs, int max)
     for (int j = 0; j < f->n - 1; j++) {
         double a = fabs(f->cur[j]) - PI, b = fabs(f->cur[j + 1]) - PI;
         if ((a < 0.0 && b >= 0.0) || (a >= 0.0 && b < 0.0)) {
-            if (count < max)
+            if (count < max) {
                 xs[count] = field_x(f, j) + f->dx * a / (a - b);
+            }
             count++;
         }
     }
@@ -92,10 +93,12 @@ int field_fronts(const Field *f, double *xs, int max)
 double field_value_at(const Field *f, double x)
 {
     double u = (x - f->x0) / f->dx;
-    if (u <= 0.0)
+    if (u <= 0.0) {
         return f->cur[0];
-    if (u >= f->n - 1)
+    }
+    if (u >= f->n - 1) {
         return f->cur[f->n - 1];
+    }
     int j = (int)floor(u);
     double a = u - j;
     return f->cur[j] + a * (f->cur[j + 1] - f->cur[j]);
@@ -131,8 +134,9 @@ double pair_measure_shift(double v, double dx, double *speed_in, double *speed_o
     double before_end = (a - 8.0) / v, after_start = meet + 8.0 / v, after_end = meet + 25.0 / v;
     int every = (int)ceil(after_end / dt / 1000.0), nb = 0, na = 0;
     Field f;
-    if (field_init(&f, (int)lround(240.0 / dx) + 1, -120.0, dx, dt, 0))
+    if (field_init(&f, (int)lround(240.0 / dx) + 1, -120.0, dx, dt, 0)) {
         return NAN;
+    }
     field_set_superposed_pair(&f, a, v);
     int steps = (int)lround(after_end / dt);
     for (int s = 0; s <= steps; s++) {
@@ -147,8 +151,9 @@ double pair_measure_shift(double v, double dx, double *speed_in, double *speed_o
                 xa[na++] = xs[1];
             } /* now on the right */
         }
-        if (s < steps)
+        if (s < steps) {
             field_step(&f);
+        }
     }
     field_free(&f);
     return pair_shift_from_tracks(tb, xb, nb, ta, xa, na, meet, speed_in, speed_out);
@@ -158,14 +163,17 @@ double pair_shift_from_tracks(const double *tb, const double *xb, int nb, const 
                               const double *xa, int na, double meet, double *speed_in,
                               double *speed_out)
 {
-    if (nb < 3 || na < 3)
+    if (nb < 3 || na < 3) {
         return NAN;
+    }
     double x_in, x_out;
     double u_in = fit(tb, xb, nb, meet, &x_in), u_out = fit(ta, xa, na, meet, &x_out);
-    if (speed_in)
+    if (speed_in) {
         *speed_in = u_in;
-    if (speed_out)
+    }
+    if (speed_out) {
         *speed_out = u_out;
+    }
     return x_out - x_in;
 }
 
@@ -177,8 +185,9 @@ double breather_measure_frequency(double omega, double dx, int periods, double *
     double rise = 0.0, peak_energy = NAN;
     int crossings = 0, steps = (int)lround(periods * period / dt);
     Field f;
-    if (field_init(&f, (int)lround(120.0 / dx) + 1, -60.0, dx, dt, 0))
+    if (field_init(&f, (int)lround(120.0 / dx) + 1, -60.0, dx, dt, 0)) {
         return NAN;
+    }
     field_set_breather(&f, omega, 0.0, 0.0);
     double e0 = field_energy(&f), before = field_value_at(&f, 0.0);
     for (int s = 1; s <= steps; s++) {
@@ -187,8 +196,9 @@ double breather_measure_frequency(double omega, double dx, int periods, double *
         double rel = fabs(field_energy(&f) / e0 - 1.0);
         if ((before < 0.0) != (now < 0.0)) {
             double tc = t - dt * now / (now - before);
-            if (isnan(first))
+            if (isnan(first)) {
                 first = tc;
+            }
             last = tc;
             crossings++;
         }
@@ -196,24 +206,31 @@ double breather_measure_frequency(double omega, double dx, int periods, double *
          * phase. */
         if (rise > 0.0 && fabs(now) <= fabs(before)) {
             double e = field_energy(&f);
-            if (isnan(peak_energy))
+            if (isnan(peak_energy)) {
                 peak_energy = e;
-            if (fabs(e / peak_energy - 1.0) > drift)
+            }
+            if (fabs(e / peak_energy - 1.0) > drift) {
                 drift = fabs(e / peak_energy - 1.0);
+            }
         }
         rise = fabs(now) - fabs(before);
         before = now;
-        if (rel > most)
+        if (rel > most) {
             most = rel;
-        if (field_fronts(&f, xs, 2) == 2 && xs[1] - xs[0] > wide)
+        }
+        if (field_fronts(&f, xs, 2) == 2 && xs[1] - xs[0] > wide) {
             wide = xs[1] - xs[0];
+        }
     }
     field_free(&f);
-    if (energy_drift)
+    if (energy_drift) {
         *energy_drift = drift;
-    if (swing)
+    }
+    if (swing) {
         *swing = most;
-    if (separation)
+    }
+    if (separation) {
         *separation = wide;
+    }
     return crossings > 1 ? PI * (crossings - 1) / (last - first) : NAN;
 }

@@ -35,8 +35,9 @@ double field_x(const Field *f, int j) { return f->x0 + j * f->dx; }
 
 static double at(const Field *f, const double *a, int j)
 {
-    if (f->periodic)
+    if (f->periodic) {
         return a[(j + f->n) % f->n];
+    }
     return a[j < 0 ? 0 : j >= f->n ? f->n - 1 : j];
 }
 
@@ -58,8 +59,9 @@ void field_set_kink(Field *f, double centre, double v, int sign)
 
 void field_set_wave(Field *f, double amp, double k)
 {
-    for (int j = 0; j < f->n; j++)
+    for (int j = 0; j < f->n; j++) {
         f->cur[j] = amp * cos(k * field_x(f, j));
+    }
     /* phi(-dt) = phi + dt^2/2 phi_tt for a field starting at rest */
     for (int j = 0; j < f->n; j++) {
         double lap =
@@ -103,8 +105,9 @@ double field_kink_position(const Field *f)
 {
     for (int j = 0; j < f->n - 1; j++) {
         double a = f->cur[j] - PI, b = f->cur[j + 1] - PI;
-        if (a < 0.0 && b >= 0.0)
+        if (a < 0.0 && b >= 0.0) {
             return field_x(f, j) + f->dx * (-a) / (b - a);
+        }
     }
     return NAN;
 }
@@ -114,8 +117,9 @@ double field_max_gradient(const Field *f)
     double m = 0.0;
     for (int j = 0; j < f->n; j++) {
         double g = fabs(field_gradient(f, j));
-        if (g > m)
+        if (g > m) {
             m = g;
+        }
     }
     return m;
 }

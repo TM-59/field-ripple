@@ -18,10 +18,12 @@ int main(void)
     CHECK(fr_reset(0.6) == 0);
     CHECK(field_init(&reference, 2000, -100.0, 0.1, 0.05, 0) == 0);
     field_set_kink(&reference, 0.0, 0.6, 1);
-    for (int n = 0; n < 400; n++)
+    for (int n = 0; n < 400; n++) {
         field_step(&reference);
-    for (int n = 0; n < 4; n++)
+    }
+    for (int n = 0; n < 4; n++) {
         CHECK(fr_step(0, 100) == 0);
+    }
     CHECK(fabs(fr_position() - field_kink_position(&reference)) < 1e-10);
     CHECK(fabs(fr_energy() - field_energy(&reference)) < 1e-10);
     CHECK(fabs(fr_time() - 20.0) < 1e-10);
@@ -39,15 +41,18 @@ int main(void)
     CHECK(fr_step(0, 121) == 1);
     CHECK(fr_step(2, 10) == 1);
     CHECK(fr_reset(0) == 0);
-    for (int n = 0; n < 10; n++)
+    for (int n = 0; n < 10; n++) {
         CHECK(fr_step(1, 100) == 0);
+    }
     CHECK(fr_velocity() > 0.5 && fr_position() > 10);
     CHECK(fr_reset(0) == 0);
-    for (int n = 0; n < 10; n++)
+    for (int n = 0; n < 10; n++) {
         CHECK(fr_step(-1, 100) == 0);
+    }
     CHECK(fr_velocity() < -0.5 && fr_position() < -10);
-    for (int n = 0; n < 100; n++)
+    for (int n = 0; n < 100; n++) {
         CHECK(fr_step(0, 100) == 0);
+    }
     CHECK(fr_stopped());
     double t = fr_time(), x = fr_position();
     CHECK(fr_step(1, 100) == 0 && fr_time() == t && fr_position() == x);

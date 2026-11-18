@@ -22,8 +22,9 @@ enum { L_LEGS = 5 };
 #define LINE_SUBSTEPS 4
 #define LINE_FRAME (LINE_DT * LINE_SUBSTEPS) /* t per frame: four solver steps of 0.05 t */
 #define LINE_RED_LINE 0.30                   /* the cell gauge turns red below this charge */
-#define LINE_LEG_LIMIT 200.0 /* t on one leg without a held mark: the turn is lost and relaunched  \
-                              */
+#define LINE_LEG_LIMIT                                                                             \
+    200.0 /* t on one leg without a held mark: the turn is lost and relaunched                     \
+           */
 
 enum {
     LS_NONE = -1,

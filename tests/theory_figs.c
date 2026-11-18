@@ -45,8 +45,9 @@ static void value(const char *id, const char *what, double measured, double theo
 static void run(Field *f, double t)
 {
     int steps = (int)(t / f->dt + 0.5);
-    for (int s = 0; s < steps; s++)
+    for (int s = 0; s < steps; s++) {
         field_step(f);
+    }
 }
 
 static double density(const Field *f, int j)
@@ -78,8 +79,9 @@ static void fig_kink(void)
     int n = 1601;
     for (int k = 0; k < 3; k++) {
         Field f;
-        if (field_init(&f, n, -8.0, 0.01, 0.005, 0))
+        if (field_init(&f, n, -8.0, 0.01, 0.005, 0)) {
             exit(1);
+        }
         field_set_kink(&f, 0.0, speeds[k], 1);
         for (int j = 0; j < n; j++) {
             xs[j] = (float)field_x(&f, j);
@@ -113,8 +115,9 @@ static void fig_contraction(void)
     for (int i = 0; i < n; i++) {
         double v = 0.05 * i, gamma = 1.0 / sqrt(1.0 - v * v);
         Field f;
-        if (field_init(&f, 2000, -100.0, 0.1, 0.05, 0))
+        if (field_init(&f, 2000, -100.0, 0.1, 0.05, 0)) {
             exit(1);
+        }
         field_set_kink(&f, -20.0, v, 1);
         run(&f, 20.0);
         xs[i] = (float)v;
@@ -129,15 +132,17 @@ static void fig_contraction(void)
             value("worldline-v0.6", "kink position after t = 20 at v = 0.6 (theory x0 + v t)",
                   field_kink_position(&f), -20.0 + v * 20.0);
         }
-        if (i == 18)
+        if (i == 18) {
             value("width-v0.9", "width 2 / max(phi_x) after t = 20 at v = 0.9 (theory 1 / gamma)",
                   ya[i], 1.0 / gamma);
+        }
         field_free(&f);
     }
     Series s[] = {{"measured", ya, "#1f77b4"}, {"sqrt(1 - v^2)", yb, "#d62728"}};
     plot("contraction.svg", "Lorentz contraction of the kink", "speed v (c = 1)", "width", n, s, 2);
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < n; i++) {
         yb[i] = (float)(1.0 / sqrt(1.0 - xs[i] * xs[i]));
+    }
     Series e[] = {{"measured E / 8", yc, "#1f77b4"}, {"gamma", yb, "#d62728"}};
     plot("energy-gamma.svg", "Energy of the moving kink", "speed v (c = 1)", "E / 8", n, e, 2);
 }
@@ -147,15 +152,17 @@ static void fig_contraction(void)
 static double measured_omega(double k, int n, double dx, double dt)
 {
     Field f;
-    if (field_init(&f, n, 0.0, dx, dt, 1))
+    if (field_init(&f, n, 0.0, dx, dt, 1)) {
         exit(1);
+    }
     field_set_wave(&f, 1e-4, k);
     double t = 0.0, before = f.cur[0], quarter = NAN;
     for (int s = 0; s < 200000 && isnan(quarter); s++) {
         field_step(&f);
         t += dt;
-        if (before > 0.0 && f.cur[0] <= 0.0)
+        if (before > 0.0 && f.cur[0] <= 0.0) {
             quarter = t - dt * (0.0 - f.cur[0]) / (before - f.cur[0]);
+        }
         before = f.cur[0];
     }
     field_free(&f);
@@ -178,12 +185,14 @@ static void fig_dispersion(void)
         ya[m - 1] = (float)sqrt(1.0 + k * k);
         yb[m - 1] = (float)disc;
         yc[m - 1] = (float)w;
-        if (m == 1)
+        if (m == 1) {
             value("dispersion-k0.63", "omega of a small wave at k = 0.628 (theory sqrt(1 + k^2))",
                   w, sqrt(1.0 + k * k));
-        if (m == 20)
+        }
+        if (m == 20) {
             value("dispersion-grid-k12.6",
                   "omega at k = 12.57 against the grid's own dispersion relation", w, disc);
+        }
     }
     Series s[] = {{"sqrt(1 + k^2)", ya, "#d62728"},
                   {"grid relation", yb, "#2ca02c"},
@@ -200,18 +209,21 @@ static void fig_energy_error(void)
     int samples = 201;
     for (int k = 0; k < 2; k++) {
         Field f;
-        if (field_init(&f, (int)(200.0 / dxs[k]), -100.0, dxs[k], 0.5 * dxs[k], 0))
+        if (field_init(&f, (int)(200.0 / dxs[k]), -100.0, dxs[k], 0.5 * dxs[k], 0)) {
             exit(1);
+        }
         field_set_kink(&f, -20.0, 0.5, 1);
         double exact = 8.0 / sqrt(1.0 - 0.25);
         for (int i = 0; i < samples; i++) {
-            if (i)
+            if (i) {
                 run(&f, 0.2);
+            }
             double rel = field_energy(&f) / exact - 1.0;
             xs[i] = (float)(0.2 * i);
             out[k][i] = (float)(rel * 1e3);
-            if (fabs(rel) > worst[k])
+            if (fabs(rel) > worst[k]) {
                 worst[k] = fabs(rel);
+            }
         }
         field_free(&f);
     }
@@ -235,25 +247,32 @@ static void fig_cfl(void)
     for (int i = 0; i < count; i++) {
         double ratio = 0.5 + 0.01 * i;
         Field f;
-        if (field_init(&f, n, 0.0, dx, ratio * dx, 1))
+        if (field_init(&f, n, 0.0, dx, ratio * dx, 1)) {
             exit(1);
-        for (int j = 0; j < n; j++)
+        }
+        for (int j = 0; j < n; j++) {
             f.cur[j] = f.prev[j] = (j % 2 ? -1e-9 : 1e-9); /* the sawtooth mode k = pi/dx */
-        for (int s = 0; s < 400; s++)
+        }
+        for (int s = 0; s < 400; s++) {
             field_step(&f);
+        }
         double m = 0.0;
-        for (int j = 0; j < n; j++)
-            if (fabs(f.cur[j]) > m)
+        for (int j = 0; j < n; j++) {
+            if (fabs(f.cur[j]) > m) {
                 m = fabs(f.cur[j]);
+            }
+        }
         xs[i] = (float)ratio;
         ya[i] = (float)log10(fmin(m, 1e30) / 1e-9);
         yb[i] = ratio > limit ? ya[i] : 0.0f;
         field_free(&f);
     }
     double first = NAN;
-    for (int i = 0; i < count && isnan(first); i++)
-        if (ya[i] > 1.0f)
+    for (int i = 0; i < count && isnan(first); i++) {
+        if (ya[i] > 1.0f) {
             first = xs[i];
+        }
+    }
     value("cfl-limit",
           "smallest dt/dx on the 0.01 grid of ratios at which the sawtooth mode grows tenfold "
           "(theory: first ratio above 2 / sqrt(4 + dx^2))",
@@ -269,8 +288,9 @@ static void fig_push(void)
     double eps = 0.01, force = 2.0 * PI * eps;
     int count = 101;
     Field f;
-    if (field_init(&f, 3000, -200.0, 0.1, 0.05, 0))
+    if (field_init(&f, 3000, -200.0, 0.1, 0.05, 0)) {
         exit(1);
+    }
     f.eps = eps;
     field_set_kink(&f, 60.0, 0.0, 1); /* a positive bias pushes a rising kink towards -x */
     double before = field_kink_position(&f);
@@ -298,8 +318,9 @@ static void fig_push(void)
     Series s[] = {{"measured", ya, "#1f77b4"}, {"p / sqrt(p^2+64)", yb, "#d62728"}};
     plot("push-speed.svg", "A uniform bias pushes the kink like a relativistic particle", "time t",
          "speed |v|", count, s, 2);
-    for (int i = 0; i < count; i++)
+    for (int i = 0; i < count; i++) {
         yb[i] = (float)(force * xs[i]);
+    }
     Series m[] = {{"8 gamma v", yc, "#1f77b4"}, {"F t", yb, "#d62728"}};
     plot("push-momentum.svg", "Momentum grows linearly under a constant force", "time t",
          "momentum |p|", count, m, 2);
@@ -313,8 +334,9 @@ static void fig_boundary(void)
     float *out[2] = {ya, yb};
     for (int k = 0; k < 2; k++) {
         Field f;
-        if (field_init(&f, n, 0.0, 0.1, 0.05, k))
+        if (field_init(&f, n, 0.0, 0.1, 0.05, k)) {
             exit(1);
+        }
         for (int j = 0; j < n; j++) {
             double x = field_x(&f, j);
             f.cur[j] = 1e-3 * exp(-pow(x - 32.0, 2.0) / 2.0);
@@ -338,8 +360,9 @@ static void fig_position(void)
     int n = 161;
     Field coarse;
     double centre = 0.137;
-    if (field_init(&coarse, 41, -10.0, 0.5, 0.05, 0))
+    if (field_init(&coarse, 41, -10.0, 0.5, 0.05, 0)) {
         exit(1);
+    }
     field_set_kink(&coarse, centre, 0.0, 1);
     double found = field_kink_position(&coarse);
     for (int i = 0; i < n; i++) {
@@ -356,8 +379,9 @@ static void fig_position(void)
           centre);
     field_free(&coarse);
     Field fine;
-    if (field_init(&fine, 2000, -100.0, 0.1, 0.05, 0))
+    if (field_init(&fine, 2000, -100.0, 0.1, 0.05, 0)) {
         exit(1);
+    }
     field_set_kink(&fine, centre, 0.0, 1);
     value("position-dx0.1",
           "interpolated kink position on the game's grid dx = 0.1 (true centre 0.137)",
@@ -410,14 +434,16 @@ static void fig_motor(void)
     static float charge[MAXN];
     double start = line_value(&l, LV_CHARGE), dial_at_ramp = 0.0;
     for (int i = 0; i < n; i++) {
-        if (i)
+        if (i) {
             line_tick(&l, 1, i <= 60 ? LC_DOWN : LC_COAST);
+        }
         xs[i] = (float)(LINE_FRAME * i);
         ya[i] = (float)line_value(&l, LV_MOTOR);
         yb[i] = (float)line_value(&l, LV_V);
         charge[i] = (float)line_value(&l, LV_CHARGE);
-        if (fabs(xs[i] - LINE_RAMP) < 0.5 * LINE_FRAME)
+        if (fabs(xs[i] - LINE_RAMP) < 0.5 * LINE_FRAME) {
             dial_at_ramp = ya[i];
+        }
     }
     value("motor-ramp", "motor dial one ramp time (2 pi t) after switching on (theory 1: full)",
           dial_at_ramp, 1.0);
@@ -450,10 +476,12 @@ static void fig_wobble(void)
         xs[i] = (float)(0.05 * i);
         ya[i] = (float)line_wobble(&alone);
         yb[i] = (float)line_wobble(&called);
-        if (fabs(ya[i]) > peak[0])
+        if (fabs(ya[i]) > peak[0]) {
             peak[0] = fabs(ya[i]);
-        if (fabs(yb[i]) > peak[1])
+        }
+        if (fabs(yb[i]) > peak[1]) {
             peak[1] = fabs(yb[i]);
+        }
     }
     value("wobble-call",
           "largest readout wobble with the call, relative to without it, over t = 15 (theory 0.10)",
@@ -500,8 +528,9 @@ static void fig_pair(void)
     double v = 0.5, t0 = -40.0, worst = 0.0;
     static float d[2][MAXN];
     Field f;
-    if (field_init(&f, 1201, -60.0, 0.1, 0.05, 0))
+    if (field_init(&f, 1201, -60.0, 0.1, 0.05, 0)) {
         exit(1);
+    }
     field_set_pair(&f, v, t0);
     int n = 601;
     for (int k = 1; k <= 8; k++) {
@@ -509,8 +538,9 @@ static void fig_pair(void)
         double t = t0 + 10.0 * k;
         for (int j = 0; j < f.n; j++) {
             double g = fabs(f.cur[j] - sg_pair_exact(field_x(&f, j), t, v));
-            if (g > worst)
+            if (g > worst) {
                 worst = g;
+            }
         }
         if (k == 3 || k == 5) { /* t = -10 and t = +10 */
             int m = k == 3 ? 0 : 1;
@@ -541,14 +571,16 @@ static void fig_shift(void)
            t0 = -(20.0 - lag) / v;
     static float free_in[MAXN];
     Field f;
-    if (field_init(&f, 1201, -60.0, 0.1, 0.05, 0))
+    if (field_init(&f, 1201, -60.0, 0.1, 0.05, 0)) {
         exit(1);
+    }
     field_set_pair(&f, v, t0);
     int n = 241;
     double span = -2.0 * t0;
     for (int i = 0; i < n; i++) {
-        if (i)
+        if (i) {
             run(&f, span / (n - 1));
+        }
         double t = t0 + span * i / (n - 1), c[2];
         int k = field_fronts(&f, c, 2);
         xs[i] = (float)t;
@@ -596,20 +628,23 @@ static void fig_shift(void)
 static void fig_pair_conserved(void)
 {
     Field f;
-    if (field_init(&f, 2401, -120.0, 0.1, 0.05, 0))
+    if (field_init(&f, 2401, -120.0, 0.1, 0.05, 0)) {
         exit(1);
+    }
     field_set_superposed_pair(&f, 20.0, 0.5);
     double e0 = field_energy(&f), worst_p = 0.0;
     int n = 401;
     for (int i = 0; i < n; i++) {
-        if (i)
+        if (i) {
             run(&f, 0.25);
+        }
         double p = field_momentum(&f);
         xs[i] = (float)(0.25 * i);
         ya[i] = (float)((field_energy(&f) / e0 - 1.0) * 1e3);
         yb[i] = (float)(p * 1e10);
-        if (fabs(p) > worst_p)
+        if (fabs(p) > worst_p) {
             worst_p = fabs(p);
+        }
     }
     value("pair-energy-v0.5", "energy of the superposed pair at v = 0.5 (theory 16 gamma)", e0,
           sg_pair_energy(0.5));
@@ -629,13 +664,15 @@ static void fig_breather(void)
 {
     double w = 0.5;
     Field f;
-    if (field_init(&f, 1201, -60.0, 0.1, 0.05, 0))
+    if (field_init(&f, 1201, -60.0, 0.1, 0.05, 0)) {
         exit(1);
+    }
     field_set_breather(&f, w, 0.0, 0.0);
     int n = 601;
     for (int i = 0; i < n; i++) {
-        if (i)
+        if (i) {
             run(&f, 0.1);
+        }
         xs[i] = (float)(0.1 * i);
         ya[i] = (float)field_value_at(&f, 0.0);
         yb[i] = (float)sg_breather_exact(0.0, 0.1 * i, w);
@@ -663,16 +700,18 @@ static void fig_breather(void)
     for (int i = 0; i < m; i++) {
         double u = 0.05 * (i + 1);
         Field g;
-        if (field_init(&g, 1201, -60.0, 0.1, 0.05, 0))
+        if (field_init(&g, 1201, -60.0, 0.1, 0.05, 0)) {
             exit(1);
+        }
         field_set_breather(&g, u, 0.5 * PI / u, 0.0); /* a peak: the field stands still */
         xs[i] = (float)u;
         ya[i] = (float)sg_breather_energy(u);
         yb[i] = (float)field_energy(&g);
-        if (i == 9)
+        if (i == 9) {
             value("breather-energy-0.5",
                   "energy of the breather at omega = 0.5 (theory 16 sqrt(1 - omega^2))",
                   field_energy(&g), sg_breather_energy(u));
+        }
         field_free(&g);
     }
     Series e[] = {{"16 sqrt(1 - omega^2)", ya, "#d62728"}, {"measured", yb, "#1f77b4"}};
@@ -686,8 +725,9 @@ static void fig_bound(void)
 {
     double w = 0.3, v = 0.3;
     Field b, p;
-    if (field_init(&b, 1201, -60.0, 0.1, 0.05, 0) || field_init(&p, 1201, -60.0, 0.1, 0.05, 0))
+    if (field_init(&b, 1201, -60.0, 0.1, 0.05, 0) || field_init(&p, 1201, -60.0, 0.1, 0.05, 0)) {
         exit(1);
+    }
     field_set_breather(&b, w, 0.0, 0.0);
     field_set_pair(&p, v, 0.0);
     int n = 301;
@@ -700,8 +740,9 @@ static void fig_bound(void)
         double c[2];
         xs[i] = (float)(0.25 * i);
         ya[i] = (float)(field_fronts(&b, c, 2) == 2 ? c[1] - c[0] : 0.0);
-        if (ya[i] > wide)
+        if (ya[i] > wide) {
             wide = ya[i];
+        }
         yb[i] = (float)(field_fronts(&p, c, 2) == 2 ? c[1] - c[0] : 0.0);
         yc[i] = (float)sg_breather_separation(w);
     }
@@ -754,8 +795,9 @@ static void fig_collision_grid(void)
           breather_measure_frequency(0.2, 0.05, 20, NULL, NULL, NULL), 0.2);
     /* A slow kink on a coarse grid: no Peierls-Nabarro pinning is visible at this resolution. */
     Field f;
-    if (field_init(&f, 1000, -200.0, 0.4, 0.2, 0))
+    if (field_init(&f, 1000, -200.0, 0.4, 0.2, 0)) {
         exit(1);
+    }
     field_set_kink(&f, -50.0, 0.05, 1);
     double x0 = field_kink_position(&f);
     run(&f, 400.0);
@@ -774,8 +816,8 @@ static void fig_collision_grid(void)
 static void check_residual(void)
 {
     double h = 1e-3, worst[2] = {0.0, 0.0};
-    for (int k = 0; k < 2; k++)
-        for (int i = 0; i <= 200; i++)
+    for (int k = 0; k < 2; k++) {
+        for (int i = 0; i <= 200; i++) {
             for (int m = 0; m <= 40; m++) {
                 double x = -10.0 + 0.1 * i, t = -10.0 + 0.5 * m;
                 double (*u)(double, double, double) = k ? sg_breather_exact : sg_pair_exact;
@@ -783,9 +825,12 @@ static void check_residual(void)
                 double tt = (u(x, t + h, p) - 2.0 * c + u(x, t - h, p)) / (h * h);
                 double xx = (u(x + h, t, p) - 2.0 * c + u(x - h, t, p)) / (h * h);
                 double r = fabs(tt - xx + sin(c));
-                if (r > worst[k])
+                if (r > worst[k]) {
                     worst[k] = r;
+                }
             }
+        }
+    }
     value("pair-residual",
           "largest |phi_tt - phi_xx + sin phi| of the exact pair, v = 0.5, by differences h = 1e-3 "
           "(ideal 0)",
@@ -826,8 +871,9 @@ int main(int argc, char **argv)
     fig_bound();
     fig_collision_grid();
     check_residual();
-    if (fclose(values) != 0)
+    if (fclose(values) != 0) {
         return 1;
+    }
     printf("theory figures written to %s\n", dir);
     return 0;
 }

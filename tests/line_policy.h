@@ -117,8 +117,9 @@ static inline int keeper_command(Keeper *p, const Line *l)
     /* Each leg gets its own stirred stream, so a choice changes the legs it touches and not, by
      * chance, every later one. */
     if (l->leg != p->leg || l->fails != p->fails) {
-        if (l->leg != p->leg)
+        if (l->leg != p->leg) {
             p->rng.s = sub_seed(p->key, (uint64_t)l->leg, 5);
+        }
         p->leg = l->leg;
         p->fails = l->fails;
         keeper_plan(p);
@@ -126,8 +127,9 @@ static inline int keeper_command(Keeper *p, const Line *l)
         p->pending = -1;
     }
     /* Holding on the ford bell: motor off and wait. */
-    if (l->held > 0.0)
+    if (l->held > 0.0) {
         return LC_COAST;
+    }
     double rem = l->target_x - l->x, dist = fabs(rem), dir = rem >= 0.0 ? 1.0 : -1.0;
     int toward = dir > 0.0 ? LC_DOWN : LC_UP, away = dir > 0.0 ? LC_UP : LC_DOWN;
     double speed, aim, band = p->band;

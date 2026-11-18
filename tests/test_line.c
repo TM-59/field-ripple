@@ -63,8 +63,9 @@ static double sign_p(int k, int n)
     double tail = 0.0;
     for (int x = k; x <= n; x++) {
         double comb = 1.0;
-        for (int y = 0; y < x; y++)
+        for (int y = 0; y < x; y++) {
             comb = comb * (n - y) / (y + 1);
+        }
         tail += comb;
     }
     return fmin(1.0, 2.0 * tail / pow(2.0, n));
@@ -114,15 +115,18 @@ static void check_choice(const char *text, const char *head)
     static double v[2][ABLATION_SEEDS][2];
     read_rows(strstr(text, head), "\"0\": [", "\"1\": [", v);
     int wins[2] = {0, 0}, side;
-    for (int m = 0; m < 2; m++)
-        if (measurable(v, m, &side))
+    for (int m = 0; m < 2; m++) {
+        if (measurable(v, m, &side)) {
             wins[side]++;
+        }
+    }
     int dominated[2] = {0, 0};
-    for (int i = 0; i < ABLATION_SEEDS; i++)
+    for (int i = 0; i < ABLATION_SEEDS; i++) {
         for (int hi = 0; hi < 2; hi++) {
             const double *x = v[hi][i], *y = v[1 - hi][i];
             dominated[hi] += x[0] <= y[0] && x[1] <= y[1] && (x[0] < y[0] || x[1] < y[1]);
         }
+    }
     assert(wins[0] == 1 && wins[1] == 1);
     assert(dominated[0] < 0.85 * ABLATION_SEEDS && dominated[1] < 0.85 * ABLATION_SEEDS);
     printf("[choice] %s each path wins one outcome; better-or-equal on both in %d/%d and %d/%d "
@@ -143,8 +147,9 @@ static void check_beat(const char *text, const char *beat, int expected_side)
     for (int m = 0; m < 2; m++) {
         assert(measurable(v, m, &side) && side == expected_side);
         double diff = 0.0;
-        for (int i = 0; i < ABLATION_SEEDS; i++)
+        for (int i = 0; i < ABLATION_SEEDS; i++) {
             diff += v[0][i][m] - v[1][i][m];
+        }
         assert(expected_side == 0 ? diff < 0.0 : diff > 0.0);
         hits++;
     }
@@ -167,25 +172,29 @@ int main(void)
         }
         strcat(want, "], \"won\": true");
         int seeds = 0, orders = 0;
-        for (const char *c = text; (c = strstr(c, "\"seed\": ")); c++)
+        for (const char *c = text; (c = strstr(c, "\"seed\": ")); c++) {
             seeds++;
-        for (const char *c = text; (c = strstr(c, want)); c++)
+        }
+        for (const char *c = text; (c = strstr(c, want)); c++) {
             orders++;
+        }
         assert(seeds >= 8 && orders == seeds);
         static const char all[] = "\"quiet\": [\"spill\", \"ford\", \"cut\"]";
         assert(strstr(text, "\"ending\": \"end-ford\", \"quiet\": [\"spill\", \"ford\", \"cut\"]"));
         assert(
             strstr(text, "\"ending\": \"end-siren\", \"quiet\": [\"spill\", \"ford\", \"cut\"]"));
-        for (const char *c = text; (c = strstr(c, "\"quiet\": [")); c++)
+        for (const char *c = text; (c = strstr(c, "\"quiet\": [")); c++) {
             assert(strncmp(c, all, sizeof all - 1) == 0);
+        }
         printf("[order] %d seeds: hut .. dawn in the designed order; both endings reached\n",
                seeds);
         RunResult r;
         run_line(play_key(3), LE_ALL, 1, 0, &r);
         assert(r.completed && r.order_len == LS_COUNT && r.ending == 0 && r.quiet[LS_SPILL] &&
                r.quiet[LS_FORD] && r.quiet[LS_CUT]);
-        for (int k = 0; k < LS_COUNT; k++)
+        for (int k = 0; k < LS_COUNT; k++) {
             assert(r.order[k] == DESIGN[k]);
+        }
     }
 
     /* [mech] hut: Ada winds the cell past the line (0.10 -> 0.45), and Kit's call steadies the
@@ -237,8 +246,9 @@ int main(void)
             l->x = l->target_x;
             l->charge = 0.5;
             l->drift = 0.0;
-            while (l->scene == LS_NONE)
+            while (l->scene == LS_NONE) {
                 line_tick(l, 1, LC_COAST);
+            }
             assert(l->scene == LS_BELL);
         }
         assert(close_to(a.charge, 0.5) && close_to(b.charge, 0.70) && close_to(c.charge, 0.5));
@@ -330,8 +340,9 @@ int main(void)
             a.x = 48.4;
             a.charge = 0.2;
             int fails = a.fails;
-            for (int k = 0; k < 5 && !a.knocked; k++)
+            for (int k = 0; k < 5 && !a.knocked; k++) {
                 line_tick(&a, 1, LC_COAST);
+            }
             assert(a.knocked && a.fails == fails + 1 && a.fails_leg[3] == 1 && a.knocks == 1 &&
                    a.fails == a.lost + a.dry + a.knocks && a.banner == LB_KNOCK && a.drift > 0.0);
             /* A turn at rest on the bell: it rings without another cell credit, and 10 t later the
@@ -346,8 +357,9 @@ int main(void)
             }
             assert(close_to(a.charge, f) && line_leak(&a) == 0.0);
             double t = a.time;
-            while (a.scene == LS_NONE)
+            while (a.scene == LS_NONE) {
                 line_tick(&a, 1, LC_COAST);
+            }
             assert(a.scene == LS_CUT && a.time - t >= 10.0 - 0.2 - 1e-9);
             puts("[quiet] ford: shown with no mark-held banner");
         }
@@ -387,8 +399,9 @@ int main(void)
                a.banner == LB_LOST);
         assert(b.fails_leg[4] == 1 && b.dry == 1 && b.fails == b.lost + b.dry + b.knocks &&
                b.drift > 7.9 && b.charge == 0.0 && b.banner == LB_DRY);
-        while (b.drift > 0.0)
+        while (b.drift > 0.0) {
             line_tick(&b, 1, LC_COAST);
+        }
         assert(b.charge > 0.14 &&
                b.charge <= 0.15); /* the motor is still spinning down as the crank charge goes in */
         line_free(&a);

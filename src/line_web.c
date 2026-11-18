@@ -30,16 +30,19 @@ static double density(const Field *f, int j)
 const double *lw_samples(void)
 {
     const Field *f = &line.field;
-    if (!line.ready)
+    if (!line.ready) {
         return samples;
+    }
     for (int i = 0; i < LW_SAMPLES; i++) {
         double x = line.x - 12.0 + 24.0 * i / (LW_SAMPLES - 1);
         double u = (x - f->x0) / f->dx;
         int j = (int)floor(u);
-        if (j < 1)
+        if (j < 1) {
             j = 1;
-        if (j > f->n - 3)
+        }
+        if (j > f->n - 3) {
             j = f->n - 3;
+        }
         double a = fmax(0.0, fmin(1.0, u - j));
         samples[2 * i] = f->cur[j] + a * (f->cur[j + 1] - f->cur[j]);
         samples[2 * i + 1] = density(f, j) + a * (density(f, j + 1) - density(f, j));

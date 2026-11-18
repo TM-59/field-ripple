@@ -26,8 +26,9 @@
 #define PARK_T 0.6               /* standing on the mark, motor off, this long */
 #define LEG_LIMIT LINE_LEG_LIMIT /* t without a held mark: the turn is lost and relaunched */
 #define RUNOFF 52.0              /* past this the turn runs off the end of the posts: lost */
-#define BASE_WOBBLE 0.30 /* absolute wobble of the speed readout with nobody reading the far end   \
-                          */
+#define BASE_WOBBLE                                                                                \
+    0.30 /* absolute wobble of the speed readout with nobody reading the far end                   \
+          */
 
 #define HUT_CELL 0.45    /* LE_HUT: Ada winds the cell past the line */
 #define CALL_WOBBLE 0.10 /* LE_HUT: Kit's call steadies the readout (wobble x0.10) */
@@ -79,8 +80,9 @@ double line_stop_distance(const Line *l, double v)
 
 double line_brake_speed(const Line *l, double d)
 {
-    if (d <= 0.0)
+    if (d <= 0.0) {
         return 0.0;
+    }
     double g = 1.0 + d * 2.0 * PI * line_torque(l) / 8.0;
     return sqrt(1.0 - 1.0 / (g * g));
 }
@@ -97,13 +99,16 @@ double line_coast_speed(const Line *l, double v)
 
 double line_wobble(const Line *l)
 {
-    if (l->leg >= L_LEGS)
+    if (l->leg >= L_LEGS) {
         return 0.0;
+    }
     double amp = BASE_WOBBLE;
-    if (l->count && on(l, LE_HUT))
+    if (l->count && on(l, LE_HUT)) {
         amp *= CALL_WOBBLE;
-    if (l->leg == 3 && on(l, LE_SPILL))
+    }
+    if (l->leg == 3 && on(l, LE_SPILL)) {
         amp += SPILL_WOBBLE;
+    }
     /* The same smooth wobble for everyone who reads the gauge: it depends only on the night clock.
      */
     double t = l->time;
@@ -114,22 +119,25 @@ double line_leak(const Line *l)
 {
     /* The relay hut is taking water in leg 4; the ferry house's dry cell bypasses the wet cell on
      * the ford branch. */
-    if (l->leg != 3 || !on(l, LE_SPILL) || l->held > 0.0 || (l->ford == 0 && on(l, LE_FORD)))
+    if (l->leg != 3 || !on(l, LE_SPILL) || l->held > 0.0 || (l->ford == 0 && on(l, LE_FORD))) {
         return 0.0;
+    }
     return SPILL_LEAK;
 }
 
 double line_arm_limit(const Line *l)
 {
-    if (l->leg == 3 && line_hold_need(l) > 0.0)
+    if (l->leg == 3 && line_hold_need(l) > 0.0) {
         return FORD_FAST;
+    }
     return l->count || !on(l, LE_CUT) ? KIT_FAST : DAM_FAST;
 }
 
 double line_hold_need(const Line *l)
 {
-    if (l->leg == 1 && l->route == 1 && on(l, LE_ROUTE))
+    if (l->leg == 1 && l->route == 1 && on(l, LE_ROUTE)) {
         return CHURCH_HOLD;
+    }
     return l->leg == 3 && l->ford == 0 && on(l, LE_FORD) ? FORD_HOLD : 0.0;
 }
 
@@ -141,22 +149,26 @@ int line_cue(const Line *l)
 {
     /* Kit reads the true turn at her end: "brake" once the stopping distance reaches the mark, "let
      * it go" once it stands on the mark. Nothing once her end of the line is gone. */
-    if (!l->count || !on(l, LE_HUT) || l->scene != LS_NONE || l->leg >= L_LEGS)
+    if (!l->count || !on(l, LE_HUT) || l->scene != LS_NONE || l->leg >= L_LEGS) {
         return 0;
+    }
     double rem = l->target_x - l->x, cv = line_coast_speed(l, l->v), toward = rem >= 0.0 ? cv : -cv;
-    if (fabs(rem) < PARK_DX && fabs(cv) < PARK_V)
+    if (fabs(rem) < PARK_DX && fabs(cv) < PARK_V) {
         return 2;
+    }
     if (toward > 0.02 &&
-        toward > 0.9 * line_brake_speed(l, fabs(rem) - toward * RAMP * 0.8 - 0.3 * PARK_DX))
+        toward > 0.9 * line_brake_speed(l, fabs(rem) - toward * RAMP * 0.8 - 0.3 * PARK_DX)) {
         return 1;
+    }
     return 0;
 }
 
 static void open_scene(Line *l, int scene)
 {
     l->scene = scene;
-    if (l->order_len < LS_COUNT)
+    if (l->order_len < LS_COUNT) {
         l->order[l->order_len++] = scene;
+    }
     if (line_heavy(scene)) {
         l->banner = LB_NONE;
         l->banner_left = 0.0;
@@ -167,26 +179,30 @@ static void raise_banner(Line *l, int banner)
 {
     l->banner = banner;
     l->banner_left = 1.5;
-    if (banner == LB_HELD)
+    if (banner == LB_HELD) {
         l->loud++;
+    }
 }
 
 static void start_leg(Line *l)
 {
     l->from_x = l->x;
     l->target_x = TARGET[l->leg];
-    if (l->leg == 1 && l->route >= 0 && on(l, LE_ROUTE))
+    if (l->leg == 1 && l->route >= 0 && on(l, LE_ROUTE)) {
         l->target_x = l->route == 0 ? MILL_X : CHURCH_X;
-    if (l->leg == 3 && l->ford == 0 && on(l, LE_FORD))
+    }
+    if (l->leg == 3 && l->ford == 0 && on(l, LE_FORD)) {
         l->target_x = FORD_X;
+    }
     l->leg_time = l->parked = l->held = 0.0;
     l->knocked = 0;
 }
 
 void line_free(Line *l)
 {
-    if (l->ready)
+    if (l->ready) {
         field_free(&l->field);
+    }
     l->ready = 0;
 }
 
@@ -195,8 +211,9 @@ void line_init(Line *l, unsigned effects)
 {
     memset(l, 0, sizeof *l);
     l->ready = field_init(&l->field, L_N, L_X0, L_DX, L_DT, 0) == 0;
-    if (l->ready)
+    if (l->ready) {
         field_set_kink(&l->field, 0.0, 0.0, 1);
+    }
     l->effects = effects;
     l->route = l->ford = -1;
     l->charge = CELL;
@@ -212,8 +229,9 @@ static void clear_leg(Line *l)
      * complete. */
     l->leg++;
     /* The heavy scenes and the ending get the screen to themselves: no "mark held" banner. */
-    if (!line_heavy(scene) && scene != LS_DAWN)
+    if (!line_heavy(scene) && scene != LS_DAWN) {
         raise_banner(l, LB_HELD);
+    }
     open_scene(l, scene);
 }
 
@@ -237,20 +255,24 @@ static void relaunch(Line *l)
     l->leg_time = l->parked = l->held = 0.0;
     l->drift = CRANK_WAIT;
     l->refuel = 0;
-    if (l->charge < RELAUNCH_CHARGE)
+    if (l->charge < RELAUNCH_CHARGE) {
         l->charge = RELAUNCH_CHARGE;
+    }
     l->lost++;
     fail(l, LB_LOST);
 }
 
 void line_tick(Line *l, int frames, int command)
 {
-    if (!l->ready || frames < 0 || l->scene != LS_NONE || l->leg >= L_LEGS)
+    if (!l->ready || frames < 0 || l->scene != LS_NONE || l->leg >= L_LEGS) {
         return;
-    if (frames > 250)
+    }
+    if (frames > 250) {
         frames = 250;
-    if (command < LC_COAST || command > LC_UP)
+    }
+    if (command < LC_COAST || command > LC_UP) {
         command = LC_COAST;
+    }
     for (int f = 0; f < frames && l->scene == LS_NONE && l->leg < L_LEGS; f++) {
         int leg = l->leg;
         double before = l->x;
@@ -259,12 +281,14 @@ void line_tick(Line *l, int frames, int command)
             int run = 0;
             if (l->drift > 0.0 && (l->drift -= L_DT) <= 1e-12) {
                 l->drift = 0.0;
-                if (l->refuel && l->charge < CRANK_CHARGE)
+                if (l->refuel && l->charge < CRANK_CHARGE) {
                     l->charge = CRANK_CHARGE;
+                }
                 l->refuel = 0;
             }
-            if (l->charge > 0.0 && l->drift <= 0.0 && command != LC_COAST)
+            if (l->charge > 0.0 && l->drift <= 0.0 && command != LC_COAST) {
                 run = command == LC_DOWN ? 1 : -1;
+            }
             /* Positive bias pushes a rising kink to -x (force -2 pi eps), so running the motor down
              * the valley is eps < 0. The motor spins up and down over RAMP t; it draws charge in
              * proportion to how hard it turns. */
@@ -285,12 +309,14 @@ void line_tick(Line *l, int frames, int command)
         /* A reading that jumps more than a turn can run in a frame means the line shook loose
          * (ripples crossed pi somewhere): treat it as a lost turn. */
         int shook = !isfinite(x) || fabs(x - before) > 2.0;
-        if (shook)
+        if (shook) {
             x = l->x;
+        }
         l->x = x;
         l->v = (x - before) / frame;
-        if (l->banner_left > 0.0 && (l->banner_left -= frame) <= 0.0)
+        if (l->banner_left > 0.0 && (l->banner_left -= frame) <= 0.0) {
             l->banner = LB_NONE;
+        }
         double need = line_hold_need(l);
         int near = fabs(l->x - l->target_x) < PARK_DX, still = fabs(l->v) < PARK_V;
         if (l->held > 0.0) {
@@ -300,8 +326,9 @@ void line_tick(Line *l, int frames, int command)
                 clear_leg(l);
                 continue;
             }
-            if (!near)
+            if (!near) {
                 l->held = 0.0; /* the turn slid off the arm: start the ring again */
+            }
         } else if (near && still && command == LC_COAST && fabs(l->field.eps) < 0.1 * MOTOR &&
                    l->drift <= 0.0) {
             if ((l->parked += frame) >= PARK_T - 1e-9) {
@@ -324,18 +351,19 @@ void line_tick(Line *l, int frames, int command)
             l->knocks++;
             fail(l, LB_KNOCK);
         }
-        if (shook || fabs(l->x) > RUNOFF || l->leg_time > LEG_LIMIT)
+        if (shook || fabs(l->x) > RUNOFF || l->leg_time > LEG_LIMIT) {
             relaunch(l);
-        /* While Kit's end is alive she cranks a dry cell where it is (the turn coasts meanwhile).
-         * After the cut nobody can, and the turn is lost (LE_CUT). */
-        else if (l->charge <= 0.0 && l->drift <= 0.0) {
+            /* While Kit's end is alive she cranks a dry cell where it is (the turn coasts
+             * meanwhile). After the cut nobody can, and the turn is lost (LE_CUT). */
+        } else if (l->charge <= 0.0 && l->drift <= 0.0) {
             if (l->count || !on(l, LE_CUT)) {
                 l->drift = CRANK_WAIT;
                 l->refuel = 1;
                 l->dry++;
                 fail(l, LB_DRY);
-            } else
+            } else {
                 relaunch(l);
+            }
         }
     }
 }
@@ -343,14 +371,16 @@ void line_tick(Line *l, int frames, int command)
 int line_answer(Line *l, int option)
 {
     int scene = l->scene;
-    if (scene == LS_NONE || option < 0 || option >= line_options(scene))
+    if (scene == LS_NONE || option < 0 || option >= line_options(scene)) {
         return 1;
+    }
     l->scene = LS_NONE;
     switch (scene) {
     case LS_HUT:
         l->count = 1;
-        if (on(l, LE_HUT))
+        if (on(l, LE_HUT)) {
             l->charge = HUT_CELL;
+        }
         start_leg(l);
         break;
     case LS_STONES:
@@ -358,8 +388,9 @@ int line_answer(Line *l, int option)
         start_leg(l);
         break;
     case LS_BELL:
-        if (on(l, LE_BOARD))
+        if (on(l, LE_BOARD)) {
             l->charge += BOARD_CHARGE;
+        }
         open_scene(l, LS_SPILL);
         break;
     case LS_SPILL:
@@ -367,13 +398,15 @@ int line_answer(Line *l, int option)
         break;
     case LS_FORD:
         l->ford = option;
-        if (option == 0 && on(l, LE_FORD))
+        if (option == 0 && on(l, LE_FORD)) {
             l->charge += FORD_CHARGE;
+        }
         start_leg(l);
         break;
     case LS_CUT:
-        if (on(l, LE_CUT))
+        if (on(l, LE_CUT)) {
             l->count = 0;
+        }
         start_leg(l);
         break;
     case LS_DAWN:

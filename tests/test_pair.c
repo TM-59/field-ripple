@@ -38,8 +38,9 @@ static double gap_to_exact(const Field *f, double t, double v)
     double worst = 0.0;
     for (int j = 0; j < f->n; j++) {
         double g = fabs(f->cur[j] - sg_pair_exact(field_x(f, j), t, v));
-        if (g > worst)
+        if (g > worst) {
             worst = g;
+        }
     }
     return worst;
 }
@@ -50,16 +51,19 @@ static double pair_gap(double v, double dx)
 {
     double t0 = -40.0, worst = 0.0;
     Field f;
-    if (field_init(&f, (int)lround(120.0 / dx) + 1, -60.0, dx, 0.5 * dx, 0))
+    if (field_init(&f, (int)lround(120.0 / dx) + 1, -60.0, dx, 0.5 * dx, 0)) {
         return NAN;
+    }
     field_set_pair(&f, v, t0);
     int per = (int)lround(10.0 / f.dt);
     for (int k = 1; k <= 8; k++) {
-        for (int s = 0; s < per; s++)
+        for (int s = 0; s < per; s++) {
             field_step(&f);
+        }
         double g = gap_to_exact(&f, t0 + 10.0 * k, v);
-        if (g > worst)
+        if (g > worst) {
             worst = g;
+        }
     }
     field_free(&f);
     return worst;
@@ -78,11 +82,13 @@ static void test_pair_follows_perring_skyrme(void)
           "between them phi = -2 pi before the collision: %.6f", f.cur[f.n / 2]);
     double worst = 0.0;
     for (int k = 1; k <= 8; k++) {
-        for (int s = 0; s < 200; s++)
+        for (int s = 0; s < 200; s++) {
             field_step(&f); /* 10 t */
+        }
         double g = gap_to_exact(&f, t0 + 10.0 * k, v);
-        if (g > worst)
+        if (g > worst) {
             worst = g;
+        }
     }
     /* The gap is the grid's: the kink runs 0.05 % slow on dx = 0.1 and sits where phi is steepest
      * (2 gamma rad per unit). */
@@ -132,10 +138,12 @@ static void test_pair_conserves_energy_momentum_and_speed(void)
     for (int s = 0; s < 2000; s++) { /* through the collision at t = 40, to t = 100 */
         field_step(&f);
         double e = fabs(field_energy(&f) / e0 - 1.0), p = fabs(field_momentum(&f));
-        if (e > swing)
+        if (e > swing) {
             swing = e;
-        if (p > worst_p)
+        }
+        if (p > worst_p) {
             worst_p = p;
+        }
     }
     double change = fabs(field_energy(&f) / e0 - 1.0);
     /* Apart again, the energy is what it was; while they overlap the reading moves by O(dt^2) (see
@@ -151,8 +159,9 @@ static void test_pair_conserves_energy_momentum_and_speed(void)
     /* One kink: P = 8 gamma v. */
     CHECK(field_init(&f, 2000, -100.0, 0.1, 0.05, 0) == 0, "allocation failed");
     field_set_kink(&f, 0.0, 0.6, 1);
-    for (int s = 0; s < 200; s++)
+    for (int s = 0; s < 200; s++) {
         field_step(&f);
+    }
     CHECK(fabs(field_momentum(&f) / 6.0 - 1.0) < 0.005, "kink momentum %.5f vs 8 gamma v = 6",
           field_momentum(&f));
     field_free(&f);
@@ -185,8 +194,9 @@ static void test_breather_keeps_frequency_and_shape(void)
         field_step(&f);
         for (int j = 0; j < f.n; j += 4) {
             double g = fabs(f.cur[j] - sg_breather_exact(field_x(&f, j), s * f.dt, w));
-            if (g > worst)
+            if (g > worst) {
                 worst = g;
+            }
         }
     }
     CHECK(worst < 0.05, "omega 0.5: largest gap to the exact breather over one period %.4g rad",
@@ -243,16 +253,18 @@ static void test_browser_adapter(void)
     Field f;
     CHECK(field_init(&f, 1201, -60.0, 0.1, 0.05, 0) == 0, "allocation failed");
     field_set_pair(&f, 0.5, pw_value(1));
-    for (int s = 0; s < 300; s++)
+    for (int s = 0; s < 300; s++) {
         field_step(&f);
+    }
     CHECK(pw_step(300) == 0, "step");
     CHECK(fabs(pw_value(3) - field_energy(&f)) < 1e-12, "adapter energy %.12f vs solver %.12f",
           pw_value(3), field_energy(&f));
     const double *s = pw_samples();
     CHECK(fabs(s[3 * 150] - field_value_at(&f, 0.0)) < 1e-12, "sample at x = 0");
     field_free(&f);
-    while (!pw_value(15))
+    while (!pw_value(15)) {
         pw_step(4000);
+    }
     double shift = pw_value(9);
     CHECK(fabs(shift / pw_value(10) - 1.0) < 0.05, "panel shift %.5f vs %.5f", shift, pw_value(10));
     CHECK(pw_value(13) < 0.15, "panel gap to exact %.4g", pw_value(13));
@@ -262,8 +274,9 @@ static void test_browser_adapter(void)
     printf("[panel] pair v = 0.5: shift %.5f (theory %.5f), gap to exact %.3g rad, %d x %d map\n",
            shift, pw_value(10), pw_value(13), pw_rows(), pw_columns());
     CHECK(pw_reset(1, 0.6) == 0, "breather reset");
-    while (!pw_value(15))
+    while (!pw_value(15)) {
         pw_step(4000);
+    }
     CHECK(fabs(pw_value(11) / 0.6 - 1.0) < 0.01, "panel omega %.6f", pw_value(11));
     CHECK(fabs(pw_value(16) - 1.0) < 1e-12 && pw_count() == 301, "mode and sample count");
     const double *h = pw_history();

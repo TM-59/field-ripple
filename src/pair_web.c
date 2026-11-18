@@ -58,30 +58,37 @@ static double exact(double x, double t)
 static void record(void)
 {
     double t = now();
-    for (int c = 0; c < PW_COLS && rows < PW_ROWS; c++)
+    for (int c = 0; c < PW_COLS && rows < PW_ROWS; c++) {
         history[rows * PW_COLS + c] =
             field_value_at(&field, -PW_HALF + 2.0 * PW_HALF * c / (PW_COLS - 1));
+    }
     rows++;
     for (int j = 0; j < field.n; j++) {
         double gap = fabs(field.cur[j] - exact(field_x(&field, j), t));
-        if (gap > worst)
+        if (gap > worst) {
             worst = gap;
+        }
     }
 }
 
 int pw_reset(int m, double p)
 {
-    if (m < 0 || m > 1 || !isfinite(p))
+    if (m < 0 || m > 1 || !isfinite(p)) {
         return 1;
-    if (m == 0 && (p < 0.05 || p > 0.95))
+    }
+    if (m == 0 && (p < 0.05 || p > 0.95)) {
         return 1;
-    if (m == 1 && (p < 0.1 || p > 0.95))
+    }
+    if (m == 1 && (p < 0.1 || p > 0.95)) {
         return 1;
-    if (ready)
+    }
+    if (ready) {
         field_free(&field);
+    }
     ready = 0;
-    if (field_init(&field, 1201, -60.0, 0.1, 0.05, 0))
+    if (field_init(&field, 1201, -60.0, 0.1, 0.05, 0)) {
         return 1;
+    }
     ready = 1;
     mode = m;
     param = p;
@@ -101,8 +108,9 @@ int pw_reset(int m, double p)
     worst = widest = 0.0;
     first_cross = last_cross = NAN;
     before0 = field_value_at(&field, 0.0);
-    for (int i = 0; i < PW_ROWS * PW_COLS; i++)
+    for (int i = 0; i < PW_ROWS * PW_COLS; i++) {
         history[i] = 0.0;
+    }
     record();
     return 0;
 }
@@ -110,12 +118,15 @@ int pw_reset(int m, double p)
 static void track(void)
 {
     double xs[2], t = now();
-    if (field_fronts(&field, xs, 2) != 2)
+    if (field_fronts(&field, xs, 2) != 2) {
         return;
-    if (xs[1] - xs[0] > widest)
+    }
+    if (xs[1] - xs[0] > widest) {
         widest = xs[1] - xs[0];
-    if (mode != 0 || xs[1] - xs[0] < 16.0)
+    }
+    if (mode != 0 || xs[1] - xs[0] < 16.0) {
         return;
+    }
     /* The soliton that enters from the left leaves on the right. */
     if (t < 0.0 && nb < PW_TRACK) {
         tb[nb] = t;
@@ -129,23 +140,26 @@ static void track(void)
 
 int pw_step(int steps)
 {
-    if (!ready || steps < 0 || steps > 4000)
+    if (!ready || steps < 0 || steps > 4000) {
         return 1;
+    }
     for (int s = 0; s < steps && !done; s++) {
         field_step(&field);
         steps_done++;
         double v0 = field_value_at(&field, 0.0), t = now();
         if ((before0 < 0.0) != (v0 < 0.0)) {
             double tc = t - field.dt * v0 / (v0 - before0);
-            if (isnan(first_cross))
+            if (isnan(first_cross)) {
                 first_cross = tc;
+            }
             last_cross = tc;
             crossings++;
         }
         before0 = v0;
         track();
-        if (steps_done * (PW_ROWS - 1) >= rows * steps_total)
+        if (steps_done * (PW_ROWS - 1) >= rows * steps_total) {
             record();
+        }
         done = steps_done >= steps_total;
     }
     return 0;
@@ -195,14 +209,16 @@ double pw_value(int k)
         return param;
     case PW_SPEED_IN: {
         double u = NAN;
-        if (mode == 0 && done)
+        if (mode == 0 && done) {
             pair_shift_from_tracks(tb, xb, nb, ta, xa, na, 0.0, &u, NULL);
+        }
         return u;
     }
     case PW_SPEED_OUT: {
         double u = NAN;
-        if (mode == 0 && done)
+        if (mode == 0 && done) {
             pair_shift_from_tracks(tb, xb, nb, ta, xa, na, 0.0, NULL, &u);
+        }
         return u;
     }
     case PW_SEPARATION:
@@ -227,16 +243,19 @@ static double density(int j)
 /* Interleaved phi, exact phi and energy density over x in [-30, 30]. */
 const double *pw_samples(void)
 {
-    if (!ready)
+    if (!ready) {
         return samples;
+    }
     double t = now();
     for (int i = 0; i < PW_SAMPLES; i++) {
         double x = -PW_HALF + 2.0 * PW_HALF * i / (PW_SAMPLES - 1), u = (x - field.x0) / field.dx;
         int j = (int)floor(u);
-        if (j < 1)
+        if (j < 1) {
             j = 1;
-        if (j > field.n - 3)
+        }
+        if (j > field.n - 3) {
             j = field.n - 3;
+        }
         double a = fmax(0.0, fmin(1.0, u - j));
         samples[3 * i] = field.cur[j] + a * (field.cur[j + 1] - field.cur[j]);
         samples[3 * i + 1] = exact(x, t);
