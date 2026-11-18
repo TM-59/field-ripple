@@ -5,55 +5,71 @@
 
 #define PI 3.14159265358979323846
 
-int field_init(Field *f, int n, double x0, double dx, double dt, int periodic)
+int field_init(Field *f, Grid grid)
 {
-    f->n = n; f->x0 = x0; f->dx = dx; f->dt = dt; f->periodic = periodic; f->eps = 0.0;
+    int n = grid.n, periodic = grid.periodic;
+    double x0 = grid.x0, dx = grid.dx, dt = grid.dt;
+    f->n = n;
+    f->x0 = x0;
+    f->dx = dx;
+    f->dt = dt;
+    f->periodic = periodic;
+    f->eps = 0.0;
     f->prev = calloc(n, sizeof *f->prev);
     f->cur = calloc(n, sizeof *f->cur);
     f->next = calloc(n, sizeof *f->next);
-    if (!f->prev || !f->cur || !f->next) { field_free(f); return 1; }
+    if (!f->prev || !f->cur || !f->next) {
+        field_free(f);
+        return 1;
+    }
     return 0;
 }
 
 void field_free(Field *f)
 {
-    free(f->prev); free(f->cur); free(f->next);
+    free(f->prev);
+    free(f->cur);
+    free(f->next);
     f->prev = f->cur = f->next = NULL;
 }
 
-double field_x(const Field *f, int j)
-{
-    return f->x0 + j * f->dx;
-}
+double field_x(const Field *f, int j) { return f->x0 + j * f->dx; }
 
 static double at(const Field *f, const double *a, int j)
 {
-    if (f->periodic) return a[(j + f->n) % f->n];
+    if (f->periodic) {
+        return a[(j + f->n) % f->n];
+    }
     return a[j < 0 ? 0 : j >= f->n ? f->n - 1 : j];
 }
 
-static double kink(double x, double t, double v, int sign)
+static double kink(double x, double t, const Kink *k)
 {
+    double v = k->v;
+    int sign = k->sign;
     double g = 1.0 / sqrt(1.0 - v * v);
     double p = 4.0 * atan(exp(g * (x - v * t)));
     return sign > 0 ? p : 2.0 * PI - p;
 }
 
-void field_set_kink(Field *f, double centre, double v, int sign)
+void field_set_kink(Field *f, Kink k)
 {
     for (int j = 0; j < f->n; j++) {
-        double x = field_x(f, j) - centre;
-        f->cur[j] = kink(x, 0.0, v, sign);
-        f->prev[j] = kink(x, -f->dt, v, sign);
+        double x = field_x(f, j) - k.centre;
+        f->cur[j] = kink(x, 0.0, &k);
+        f->prev[j] = kink(x, -f->dt, &k);
     }
 }
 
 void field_set_wave(Field *f, double amp, double k)
 {
-    for (int j = 0; j < f->n; j++) f->cur[j] = amp * cos(k * field_x(f, j));
+    for (int j = 0; j < f->n; j++) {
+        f->cur[j] = amp * cos(k * field_x(f, j));
+    }
     /* phi(-dt) = phi + dt^2/2 phi_tt for a field starting at rest */
     for (int j = 0; j < f->n; j++) {
-        double lap = (at(f, f->cur, j + 1) - 2.0 * f->cur[j] + at(f, f->cur, j - 1)) / (f->dx * f->dx);
+        double lap =
+            (at(f, f->cur, j + 1) - 2.0 * f->cur[j] + at(f, f->cur, j - 1)) / (f->dx * f->dx);
         f->prev[j] = f->cur[j] + 0.5 * f->dt * f->dt * (lap - sin(f->cur[j]) + f->eps);
     }
 }
@@ -81,7 +97,8 @@ double field_energy(const Field *f)
     double e = 0.0;
     for (int j = 0; j < f->n; j++) {
         double pt = (f->cur[j] - f->prev[j]) / f->dt;
-        double gx = field_gradient(f, j), gp = (at(f, f->prev, j + 1) - at(f, f->prev, j - 1)) / (2.0 * f->dx);
+        double gx = field_gradient(f, j),
+               gp = (at(f, f->prev, j + 1) - at(f, f->prev, j - 1)) / (2.0 * f->dx);
         double pot = 0.5 * ((1.0 - cos(f->cur[j])) + (1.0 - cos(f->prev[j])));
         e += 0.5 * pt * pt + 0.25 * (gx * gx + gp * gp) + pot;
     }
@@ -92,7 +109,9 @@ double field_kink_position(const Field *f)
 {
     for (int j = 0; j < f->n - 1; j++) {
         double a = f->cur[j] - PI, b = f->cur[j + 1] - PI;
-        if (a < 0.0 && b >= 0.0) return field_x(f, j) + f->dx * (-a) / (b - a);
+        if (a < 0.0 && b >= 0.0) {
+            return field_x(f, j) + f->dx * (-a) / (b - a);
+        }
     }
     return NAN;
 }
@@ -102,7 +121,9 @@ double field_max_gradient(const Field *f)
     double m = 0.0;
     for (int j = 0; j < f->n; j++) {
         double g = fabs(field_gradient(f, j));
-        if (g > m) m = g;
+        if (g > m) {
+            m = g;
+        }
     }
     return m;
 }

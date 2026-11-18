@@ -26,13 +26,8 @@
       "valence": 0,
       "intensity": 1,
       "emotion": "fear",
-      "tags": [
-        "reward",
-        "quiet"
-      ],
-      "setup": [
-        "s-rule"
-      ],
+      "tags": ["reward", "quiet"],
+      "setup": ["s-rule"],
       "mechanism": {
         "state": "LE_HUT",
         "test": "[mech] hut"
@@ -46,19 +41,11 @@
       "valence": -1,
       "intensity": 2,
       "emotion": "fear",
-      "tags": [
-        "choice",
-        "cost"
-      ],
-      "setup": [
-        "s-ford",
-        "s-hale"
-      ],
+      "tags": ["choice", "cost"],
+      "setup": ["s-ford", "s-hale"],
       "choice": {
         "options": 2,
-        "changes": [
-          "bell"
-        ],
+        "changes": ["bell"],
         "labels": [
           "Ring the mill bell (short span)",
           "Ring the church bell (long span, the sexton cranks back)"
@@ -77,10 +64,7 @@
       "valence": 2,
       "intensity": 2,
       "emotion": "joy",
-      "tags": [
-        "reward",
-        "peak"
-      ],
+      "tags": ["reward", "peak"],
       "mechanism": {
         "state": "LE_BOARD",
         "test": "[mech] bell"
@@ -94,10 +78,7 @@
       "valence": -2,
       "intensity": 3,
       "emotion": "anger",
-      "tags": [
-        "punishment",
-        "twist"
-      ],
+      "tags": ["punishment", "twist"],
       "mechanism": {
         "state": "LE_SPILL",
         "test": "[mech] spill"
@@ -115,20 +96,12 @@
       "valence": -2,
       "intensity": 3,
       "emotion": "fear",
-      "tags": [
-        "cost",
-        "choice"
-      ],
+      "tags": ["cost", "choice"],
       "irreversible": true,
-      "payoff": [
-        "s-ford"
-      ],
+      "payoff": ["s-ford"],
       "choice": {
         "options": 2,
-        "changes": [
-          "cut",
-          "dawn"
-        ],
+        "changes": ["cut", "dawn"],
         "labels": [
           "Send it down to the ford bell (past the water line, then hold it while the bell rings)",
           "Ring the hill siren (dry posts, the town hears it)"
@@ -151,14 +124,9 @@
       "valence": -3,
       "intensity": 3,
       "emotion": "sorrow",
-      "tags": [
-        "loss",
-        "quiet"
-      ],
+      "tags": ["loss", "quiet"],
       "irreversible": true,
-      "payoff": [
-        "s-rule"
-      ],
+      "payoff": ["s-rule"],
       "mechanism": {
         "state": "LE_CUT",
         "test": "[mech] cut"
@@ -176,12 +144,8 @@
       "valence": 1,
       "intensity": 2,
       "emotion": "relief",
-      "tags": [
-        "quiet"
-      ],
-      "payoff": [
-        "s-hale"
-      ],
+      "tags": ["quiet"],
+      "payoff": ["s-hale"],
       "evidence": "Ada comes down the dam road at five with her crank on her back."
     }
   ],

@@ -1,6 +1,9 @@
 CC      ?= cc
 CFLAGS  ?= -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror
 LDLIBS  += -lm
+# The terminal mode of src/main.c is POSIX; the feature macro is set here because a name starting
+# with an underscore and a capital letter is reserved inside the program.
+POSIX   := -D_POSIX_C_SOURCE=200809L
 SRC     := src/field.c src/svg.c src/render.c src/gif.c src/pair.c
 EMCC    ?= emcc
 PORT    ?= 4190
@@ -9,7 +12,7 @@ PORT    ?= 4190
 all: field-ripple
 
 field-ripple: $(SRC) src/main.c src/pair.h
-	$(CC) $(CFLAGS) -o $@ $(SRC) src/main.c $(LDLIBS)
+	$(CC) $(CFLAGS) $(POSIX) -o $@ $(SRC) src/main.c $(LDLIBS)
 
 test_field: $(SRC) tests/test_field.c
 	$(CC) $(CFLAGS) -o $@ $(SRC) tests/test_field.c $(LDLIBS)
@@ -68,13 +71,13 @@ web: dist/field.mjs
 	cp web/index.html web/style.css web/app.mjs web/collide.mjs dist/
 	mkdir -p dist/assets
 	cp assets/observatory.jpg dist/assets/
-	python3 scripts/check-size.py
+	python3 scripts/check_size.py
 
 dist/field.mjs: src/field.c src/observer.c src/line.c src/line_web.c src/pair.c src/pair_web.c src/field.h src/observer.h src/line.h src/pair.h
 	mkdir -p dist
 	$(EMCC) $(CFLAGS) src/field.c src/observer.c src/line.c src/line_web.c src/pair.c src/pair_web.c -lm --no-entry -o $@ \
 	  -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,node \
-	  -sEXPORTED_FUNCTIONS=_fr_reset,_fr_step,_fr_time,_fr_position,_fr_velocity,_fr_energy,_fr_width,_fr_stopped,_fr_samples,_fr_count,_lw_reset,_lw_tick,_lw_answer,_lw_value,_lw_samples,_lw_count,_pw_reset,_pw_step,_pw_value,_pw_samples,_pw_history,_pw_count,_pw_columns,_pw_rows \
+	  -sEXPORTED_FUNCTIONS=_fr_reset,_fr_step,_fr_time,_fr_position,_fr_velocity,_fr_energy,_fr_width,_fr_stopped,_fr_samples,_fr_count,_lw_reset,_lw_command,_lw_tick,_lw_answer,_lw_value,_lw_samples,_lw_count,_pw_reset,_pw_step,_pw_value,_pw_samples,_pw_history,_pw_count,_pw_columns,_pw_rows \
 	  -sEXPORTED_RUNTIME_METHODS=HEAPF64
 
 smoke: web
@@ -101,7 +104,7 @@ theory-figs: theory_figs
 
 # Fails when a statement of docs/theory has no figure, a link is broken, or a referenced function or test is gone.
 theory-check:
-	python3 scripts/theory-check.py
+	python3 scripts/theory_check.py
 
 clean:
 	rm -f field-ripple test_field test_gif test_observer bench_field test_line story_bench theory_figs test_pair
@@ -118,13 +121,13 @@ TM_UNIT_BINS := test_field test_gif test_observer test_line test_pair story_benc
 
 .PHONY: test-unit check test-trace test-perf test-e2e tm-ctest tm-deps test-tm-unit test-tm-trace test-tm-perf test-tm-e2e
 test-unit:
-	$(TM_TEST_PYTHON) scripts/local-test.py unit
+	$(TM_TEST_PYTHON) scripts/local_test.py unit
 
 check:
-	$(TM_TEST_PYTHON) scripts/local-test.py all
+	$(TM_TEST_PYTHON) scripts/local_test.py all
 
 test-trace test-perf test-e2e:
-	$(TM_TEST_PYTHON) scripts/local-test.py $(@:test-%=%)
+	$(TM_TEST_PYTHON) scripts/local_test.py $(@:test-%=%)
 
 tm-ctest:
 	mkdir -p test-results
@@ -144,3 +147,30 @@ tm-deps:
 
 test-tm-e2e: tm-ctest tm-deps
 	"$(TM_TEST_CTEST)" --test-dir .tm-ctest -j 1 -L '^e2e$$' --output-on-failure --output-junit "$(CURDIR)/test-results/e2e.xml"
+
+# ---- Formatter, linter and type checker (no ignores) ----
+# C: clang-format, clang-tidy (.clang-tidy) and the compiler with -Wall -Wextra -Wpedantic -Werror.
+# Python (scripts/*.py): Ruff format, Ruff with every rule, mypy strict. These are pinned by uv.lock.
+# JavaScript, CSS, HTML, JSON: Biome (recommended rules, warnings fail) and tsc --checkJs strict,
+# pinned by package-lock.json. TIDY_EXTRA passes -isystem paths when the C library headers are elsewhere.
+RUN        = uv run --locked
+STYLE_C    = $(shell git ls-files '*.c' '*.h')
+STYLE_TU   = $(shell git ls-files '*.c')
+TIDY_EXTRA ?=
+.PHONY: fmt lint typecheck check-style
+fmt:
+	$(RUN) clang-format -i $(STYLE_C)
+	$(RUN) ruff format scripts
+	$(RUN) ruff check --fix scripts
+	npm run fmt
+lint:
+	$(RUN) clang-format --dry-run --Werror $(STYLE_C)
+	$(RUN) clang-tidy $(STYLE_TU) -- -std=c11 -Isrc -Itests $(POSIX) $(TIDY_EXTRA)
+	$(RUN) ruff format --check scripts
+	$(RUN) ruff check scripts
+	npm run lint
+typecheck:
+	for f in $(STYLE_TU); do $(CC) $(CFLAGS) $(POSIX) -Isrc -Itests -fsyntax-only $$f || exit 1; done
+	$(RUN) mypy
+	npm run typecheck
+check-style: lint typecheck

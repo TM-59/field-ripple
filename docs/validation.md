@@ -22,7 +22,7 @@ This host has no system `cc`. Native validation used an existing temporary Clang
 
 ## Web output
 
-`make web` passed, with no compiler warnings. All output files, rather than only the WASM file, are counted by `scripts/check-size.py`:
+`make web` passed, with no compiler warnings. All output files, rather than only the WASM file, are counted by `scripts/check_size.py`:
 
 | File | Bytes |
 |---|---:|

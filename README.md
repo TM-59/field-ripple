@@ -68,6 +68,8 @@ make && ./field-ripple          # interactive
 ./field-ripple --collide docs  # space-time maps of a collision and a breather (docs/collision.gif)
 make test && make bench         # native physics, GIF and presentation-adapter checks
 make plots                      # regenerate CSV, SVG and GIF
+make check-style                # formatter, linter and type checker (C, Python, JavaScript)
+make fmt                        # apply the formatters
 ```
 
 Keys: `a`/`d` push the kink left/right (a uniform bias term `ε` acts as a force), `p` pause, `q` quit. Park the kink on the `|` mark.
