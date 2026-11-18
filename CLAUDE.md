@@ -20,6 +20,8 @@ C11 + libm の sine-Gordon 場の実験。`src/field.c` が物理計算の正典
   法則・規則を足したら同じ PR で頁と図と表を足す。README の「34 statements」は表の行数と合わせる。
 - CI は PR の軽量ゲート `docker build .`(Dockerfile の中で `make test` と `make plots`)だけ。ブラウザー撮影・Web ビルドはローカル。
 - 保存・乱数は使わない。URL のサブパスで動作し、外部通信を追加しない。
+- 整形・lint・型検査は `make fmt` / `make check-style`(clang-format・clang-tidy・-Werror、Ruff・mypy strict、Biome・tsc --checkJs。版は uv.lock と package-lock.json)。抑制コメント・除外は置かない。C ライブラリのヘッダーが既定の場所に無い端末は `TIDY_EXTRA="-isystem <dir>"`。
+  Biome の対象外は書いていない生成物だけ: `docs/narrative/{play-order,ablation,tension}.json`(`make story`)と `docs/theory/figures/values.md`(`make theory-figs`)。Ruff で外すのは両立しない規則の片方だけ(pyproject.toml に相手と理由)。
 
 ## 衝突とブリーザー(2026-11-13、Issue #2)
 
