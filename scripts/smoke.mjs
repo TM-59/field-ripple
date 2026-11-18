@@ -13,6 +13,7 @@ const libs = path.join(os.homedir(), '.local/lib/chromium-deps/usr/lib/x86_64-li
 if (existsSync(libs))
   process.env.LD_LIBRARY_PATH =
     libs + (process.env.LD_LIBRARY_PATH ? `:${process.env.LD_LIBRARY_PATH}` : '');
+/** @type {Record<string, string>} */
 const types = {
   '.html': 'text/html',
   '.mjs': 'text/javascript',
@@ -23,7 +24,7 @@ const types = {
 const root = path.resolve('dist');
 const server = createServer(async (req, res) => {
   try {
-    const pathname = new URL(req.url, 'http://localhost').pathname;
+    const pathname = new URL(req.url ?? '/', 'http://localhost').pathname;
     assert(pathname.startsWith('/ripple/'));
     const file = path.resolve(root, decodeURIComponent(pathname.slice(8)) || 'index.html');
     assert(file.startsWith(root + path.sep));
@@ -34,16 +35,50 @@ const server = createServer(async (req, res) => {
     res.end();
   }
 });
-await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-const url = `http://127.0.0.1:${server.address().port}/ripple/`;
+await new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(undefined)));
+const address = server.address();
+if (!address || typeof address === 'string') throw new Error('the server has no port');
+const url = `http://127.0.0.1:${address.port}/ripple/`;
+/** @type {import('playwright').Browser | undefined} */
 let browser;
+/** @type {string[]} */
 const checks = [],
+  /** @type {string[]} */
   errors = [],
+  /** @type {string[]} */
   external = [],
+  /** @type {string[]} */
   failedResponses = [],
+  /** @type {string[]} */
   consoleErrors = [];
-const inspect = (page) => page.evaluate(() => window.fieldView);
-const waitTime = (page, time) => page.waitForFunction((t) => window.fieldView?.time >= t, time);
+/**
+ * @template T
+ * @param {T | undefined} view
+ * @param {string} name
+ * @returns {T}
+ */
+const present = (view, name) => {
+  if (view === undefined) throw new Error(`the page has no ${name} yet`);
+  return view;
+};
+/** @param {import('playwright').Locator} locator */
+const boxOf = async (locator) => {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error('the element is not visible');
+  return box;
+};
+/** @param {import('playwright').Page} page */
+const inspect = async (page) => present(await page.evaluate(() => window.fieldView), 'fieldView');
+/**
+ * @param {import('playwright').Page} page
+ * @param {number} time
+ */
+const waitTime = (page, time) =>
+  page.waitForFunction((t) => (window.fieldView?.time ?? -1) >= t, time);
+/**
+ * @param {import('playwright').Page} page
+ * @param {{ fallback?: boolean }} [options]
+ */
 const track = (page, { fallback = false } = {}) => {
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('request', (req) => {
@@ -60,6 +95,10 @@ const track = (page, { fallback = false } = {}) => {
 };
 await mkdir('docs/images', { recursive: true });
 await mkdir('out', { recursive: true });
+/**
+ * @param {import('playwright').Page} page
+ * @param {string} name
+ */
 const shot = (page, name) =>
   page.screenshot({ path: `docs/images/${name}.jpg`, type: 'jpeg', quality: 85, fullPage: true });
 try {
@@ -103,7 +142,7 @@ try {
   await page.keyboard.up('d');
   let s = await inspect(page);
   assert(s.velocity > 0.15 && s.position > 0.4);
-  await page.waitForFunction(() => window.fieldView.force === 0);
+  await page.waitForFunction(() => window.fieldView?.force === 0);
   await waitTime(page, s.time + 1);
   s = await inspect(page);
   assert(s.velocity > 0.15);
@@ -134,7 +173,7 @@ try {
   await touch.goto(url);
   await touch.locator('#start').tap();
   await touch.locator('#left').scrollIntoViewIfNeeded();
-  const box = await touch.locator('#left').boundingBox();
+  const box = await boxOf(touch.locator('#left'));
   const cdp = await mobile.newCDPSession(touch);
   await cdp.send('Input.dispatchTouchEvent', {
     type: 'touchStart',
@@ -152,7 +191,7 @@ try {
   await waitTime(touch, 5);
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
   await touch.waitForFunction(
-    () => window.fieldView.held.length === 0 && window.fieldView.force === 0,
+    () => window.fieldView?.held.length === 0 && window.fieldView?.force === 0,
   );
   s = await inspect(touch);
   assert(s.velocity < -0.15 && s.position < -0.3);
@@ -165,7 +204,7 @@ try {
   await page.locator('[data-speed="0.9"]').click();
   await page.locator('#pause').click();
   // Render-frame time is not altered. Wait for the actual finite-domain stop.
-  await page.waitForFunction(() => window.fieldView.stopped, null, { timeout: 30000 });
+  await page.waitForFunction(() => window.fieldView?.stopped, null, { timeout: 30000 });
   s = await inspect(page);
   assert(s.paused && s.position >= 75 && s.held.length === 0);
   assert(await page.locator('#pause').isDisabled());
@@ -177,14 +216,26 @@ try {
 
   // The Flood Line: two whole nights with real keys and clicks, one per ending. A simple driver reads only what the
   // page shows (the speed needle after spin-down and the distance to the mark) and holds A / D.
-  const line = (page) => page.evaluate(() => window.lineView);
+  /** @param {import('playwright').Page} page */
+  const line = async (page) => present(await page.evaluate(() => window.lineView), 'lineView');
+  /**
+   * @param {number} route
+   * @param {number} ford
+   * @param {boolean} shots
+   */
   async function night(route, ford, shots) {
+    if (!browser) throw new Error('no browser');
     const p = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     track(p);
     await p.goto(`${url}?rate=3`);
-    await p.waitForFunction(() => !document.getElementById('line-start').disabled);
+    await p.waitForFunction(() => {
+      const button = document.getElementById('line-start');
+      return button instanceof HTMLButtonElement && !button.disabled;
+    });
     await p.locator('#line-start').click();
+    /** @type {(string | null)[]} */
     const seen = [],
+      /** @type {(string | null)[]} */
       quiet = [];
     let held = null,
       heavyOpen = null,
@@ -215,7 +266,7 @@ try {
           // The first moments after a heavy scene: no "mark held" banner.
           for (let k = 0; k < 4; k++) {
             const w = await line(p);
-            assert(!/MARK HELD/.test(w.bannerShown ? w.bannerText : ''));
+            assert(!/MARK HELD/.test(w.bannerShown ? (w.bannerText ?? '') : ''));
             await p.waitForTimeout(60);
           }
           quiet.push(heavyOpen);
@@ -225,12 +276,15 @@ try {
       }
       assert(
         await p.evaluate(
-          () => document.getElementById('l-lost').textContent === String(window.lineView.fails),
+          () => document.getElementById('l-lost')?.textContent === String(window.lineView?.fails),
         ),
       );
       if (v.leg === 3 && ford === 0) {
         assert.equal(v.target, 49);
-        assert.match(await p.locator('#line-goal').textContent(), /ford|motor|winding|catch arm/i);
+        assert.match(
+          (await p.locator('#line-goal').textContent()) ?? '',
+          /ford|motor|winding|catch arm/i,
+        );
       }
       if (shots && !legShot && v.leg === 1 && Math.abs(v.remaining) < 8) {
         await shot(p, 'line-play');
@@ -259,7 +313,7 @@ try {
     }
     const v = await line(p);
     await p.close();
-    return { seen, quiet, ending: v.sceneText, fails: v.fails, time: v.time };
+    return { seen, quiet, ending: v.sceneText ?? '', fails: v.fails, time: v.time };
   }
   const nightA = await night(1, 0, true),
     nightB = await night(0, 1, true);
@@ -275,10 +329,12 @@ try {
   );
 
   // Phone, upright and sideways: touch only. Words 14 CSS px or more, targets 44 px or more, the plot over half the screen.
-  for (const [w, h, name] of [
+  /** @type {[number, number, string | null][]} */
+  const phones = [
     [375, 812, 'line-mobile'],
     [812, 375, null],
-  ]) {
+  ];
+  for (const [w, h, name] of phones) {
     const ctx = await browser.newContext({
       viewport: { width: w, height: h },
       deviceScaleFactor: 2,
@@ -288,10 +344,13 @@ try {
     const p = await ctx.newPage();
     track(p);
     await p.goto(url);
-    await p.waitForFunction(() => !document.getElementById('line-start').disabled);
+    await p.waitForFunction(() => {
+      const button = document.getElementById('line-start');
+      return button instanceof HTMLButtonElement && !button.disabled;
+    });
     await p.locator('#line-start').tap();
     await p.locator('#scene-options button').first().tap();
-    const b = await p.locator('[data-motor=down]').boundingBox();
+    const b = await boxOf(p.locator('[data-motor=down]'));
     const cdp = await ctx.newCDPSession(p);
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchStart',
@@ -307,6 +366,7 @@ try {
     const m = await p.evaluate(() => {
       const small = [],
         tiny = [];
+      /** @param {Element} e */
       const vis = (e) => {
         const r = e.getBoundingClientRect();
         const st = getComputedStyle(e);
@@ -323,17 +383,19 @@ try {
         for (const n of e.childNodes)
           if (
             n.nodeType === 3 &&
-            n.textContent.trim() &&
+            n.textContent?.trim() &&
             parseFloat(getComputedStyle(e).fontSize) < 14
           )
-            small.push(n.textContent.trim().slice(0, 20));
+            small.push((n.textContent ?? '').trim().slice(0, 20));
       }
       for (const e of document.querySelectorAll('button,a[href],input,select')) {
         if (!vis(e)) continue;
         const r = e.getBoundingClientRect();
         if (r.width < 44 || r.height < 44) tiny.push(e.id || e.textContent.trim().slice(0, 20));
       }
-      const c = document.getElementById('line-plot').getBoundingClientRect();
+      const plot = document.getElementById('line-plot');
+      if (!plot) throw new Error('missing #line-plot');
+      const c = plot.getBoundingClientRect();
       return {
         small,
         tiny,
@@ -356,9 +418,17 @@ try {
 
   // Collisions and breathers: the same C (src/pair.c) through WebAssembly; the native test prints the reference values.
   const native = execFileSync('./test_pair', { encoding: 'utf8' });
-  const nativeShift = Number(native.match(/\[panel\] pair v = 0\.5: shift ([0-9.]+)/)[1]);
-  const nativeOmega = Number(native.match(/\[panel\] breather omega 0\.6: measured ([0-9.]+)/)[1]);
-  const cv = (p) => p.evaluate(() => window.collideView);
+  /** @param {RegExp} pattern a pattern with one number captured */
+  const nativeValue = (pattern) => {
+    const match = native.match(pattern);
+    if (!match) throw new Error(`test_pair printed no ${pattern}`);
+    return Number(match[1]);
+  };
+  const nativeShift = nativeValue(/\[panel\] pair v = 0\.5: shift ([0-9.]+)/);
+  const nativeOmega = nativeValue(/\[panel\] breather omega 0\.6: measured ([0-9.]+)/);
+  /** @param {import('playwright').Page} p */
+  const cv = async (p) => present(await p.evaluate(() => window.collideView), 'collideView');
+  /** @param {import('playwright').Page} p */
   async function collideRun(p, timeout = 60000) {
     await p.locator('#collide-run').click();
     await p.waitForFunction(() => window.collideView?.done === 1, null, { timeout });
@@ -368,7 +438,10 @@ try {
     const p = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     track(p);
     await p.goto(url);
-    await p.waitForFunction(() => !document.getElementById('collide-open').disabled);
+    await p.waitForFunction(() => {
+      const button = document.getElementById('collide-open');
+      return button instanceof HTMLButtonElement && !button.disabled;
+    });
     await p.locator('#collide-open').click();
     let c = await cv(p);
     assert.equal(c.mode, 0);
@@ -420,6 +493,7 @@ try {
     // Same WASM as the native adapter test at omega = 0.6.
     await p.evaluate(() => {
       const s = document.getElementById('collide-param');
+      if (!(s instanceof HTMLInputElement)) throw new Error('missing #collide-param');
       s.value = '0.6';
       s.dispatchEvent(new Event('input'));
     });
@@ -442,10 +516,12 @@ try {
     checks.push('collision panel at 1440 and 1024 px wide: no horizontal scroll');
     await p.close();
   }
-  for (const [w, h, name] of [
+  /** @type {[number, number, string | null][]} */
+  const collidePhones = [
     [390, 844, 'collide-mobile'],
     [844, 390, null],
-  ]) {
+  ];
+  for (const [w, h, name] of collidePhones) {
     const ctx = await browser.newContext({
       viewport: { width: w, height: h },
       deviceScaleFactor: 2,
@@ -455,7 +531,10 @@ try {
     const p = await ctx.newPage();
     track(p);
     await p.goto(url);
-    await p.waitForFunction(() => !document.getElementById('collide-open').disabled);
+    await p.waitForFunction(() => {
+      const button = document.getElementById('collide-open');
+      return button instanceof HTMLButtonElement && !button.disabled;
+    });
     await p.locator('#collide-open').tap();
     await p.locator('[data-collide-mode="1"]').tap();
     await p.locator('#collide-presets button').last().tap();
@@ -467,6 +546,8 @@ try {
       const small = [],
         tiny = [],
         root = document.getElementById('collide');
+      if (!root) throw new Error('missing #collide');
+      /** @param {Element} e */
       const vis = (e) => {
         const r = e.getBoundingClientRect();
         const st = getComputedStyle(e);
@@ -477,10 +558,10 @@ try {
         for (const n of e.childNodes)
           if (
             n.nodeType === 3 &&
-            n.textContent.trim() &&
+            n.textContent?.trim() &&
             parseFloat(getComputedStyle(e).fontSize) < 14
           )
-            small.push(n.textContent.trim().slice(0, 20));
+            small.push((n.textContent ?? '').trim().slice(0, 20));
       }
       for (const e of root.querySelectorAll('button,a[href],input,select')) {
         if (!vis(e)) continue;

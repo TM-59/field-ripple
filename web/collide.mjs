@@ -1,6 +1,33 @@
 // Collisions and breathers (src/pair_web.c over src/pair.c and the unchanged src/field.c).
 // Every number and every drawn curve comes from C through the _pw_ entry points; JavaScript only draws and holds the controls.
-const $ = (id) => document.getElementById(id);
+/** @param {string} id */
+const $ = (id) => {
+  const element = document.getElementById(id);
+  if (!element) throw new Error(`missing #${id}`);
+  return element;
+};
+/**
+ * @template {HTMLElement} T
+ * @param {string} id
+ * @param {{ new (): T, name: string }} type
+ * @returns {T}
+ */
+const $as = (id, type) => {
+  const element = $(id);
+  if (!(element instanceof type)) throw new Error(`#${id} is not a ${type.name}`);
+  return element;
+};
+/** @param {string} selector the buttons that match it */
+const buttonsOf = (selector) =>
+  [...document.querySelectorAll(selector)].filter(
+    (element) => element instanceof HTMLButtonElement,
+  );
+/** @param {HTMLCanvasElement} canvas */
+const context2d = (canvas) => {
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('no 2D canvas context');
+  return context;
+};
 const V = {
   time: 0,
   start: 1,
@@ -34,26 +61,52 @@ const RANGE = [
   [0.1, 0.95],
 ];
 
+/** @param {import('./field.mjs').FieldModule} field */
 export function initCollide(field) {
   let mode = 0,
     param = 0.5,
     running = false,
     last = 0,
     carry = 0;
-  const plot = $('collide-plot'),
-    map = $('collide-map'),
-    pctx = plot.getContext('2d'),
-    mctx = map.getContext('2d');
-  const read = () => Object.fromEntries(Object.entries(V).map(([k, i]) => [k, field._pw_value(i)]));
+  const plot = $as('collide-plot', HTMLCanvasElement),
+    map = $as('collide-map', HTMLCanvasElement),
+    pctx = context2d(plot),
+    mctx = context2d(map);
+  /** @returns {CollideState} every value of the lab, read from C by the indices in V */
+  const read = () => ({
+    time: field._pw_value(V.time),
+    start: field._pw_value(V.start),
+    end: field._pw_value(V.end),
+    energy: field._pw_value(V.energy),
+    energyTheory: field._pw_value(V.energyTheory),
+    momentum: field._pw_value(V.momentum),
+    fronts: field._pw_value(V.fronts),
+    left: field._pw_value(V.left),
+    right: field._pw_value(V.right),
+    shift: field._pw_value(V.shift),
+    shiftTheory: field._pw_value(V.shiftTheory),
+    omega: field._pw_value(V.omega),
+    omegaTheory: field._pw_value(V.omegaTheory),
+    gap: field._pw_value(V.gap),
+    rows: field._pw_value(V.rows),
+    done: field._pw_value(V.done),
+    mode: field._pw_value(V.mode),
+    param: field._pw_value(V.param),
+    speedIn: field._pw_value(V.speedIn),
+    speedOut: field._pw_value(V.speedOut),
+    separation: field._pw_value(V.separation),
+    separationTheory: field._pw_value(V.separationTheory),
+  });
   const off = document.createElement('canvas'),
     cols = field._pw_columns(),
     rows = field._pw_rows();
   off.width = cols;
   off.height = rows;
-  const octx = off.getContext('2d'),
+  const octx = context2d(off),
     image = octx.createImageData(cols, rows);
 
   // Diverging colours: blue below zero, dark at zero, amber above (same map as the terminal's docs/collision.gif).
+  /** @param {number} phi */
   function colour(phi) {
     const u = Math.max(-1, Math.min(1, phi / (2 * Math.PI))),
       a = Math.abs(u);
@@ -61,6 +114,7 @@ export function initCollide(field) {
       ? [20 + 235 * a, 20 + 165 * a, 20 + 40 * a]
       : [20 + 40 * a, 20 + 150 * a, 20 + 235 * a];
   }
+  /** @param {HTMLCanvasElement} c */
   function size(c) {
     const w = c.clientWidth,
       h = c.clientHeight,
@@ -69,10 +123,24 @@ export function initCollide(field) {
       c.width = Math.round(w * dpr);
       c.height = Math.round(h * dpr);
     }
-    c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    context2d(c).setTransform(dpr, 0, 0, dpr, 0, 0);
     return [w, h];
   }
-  function label(ctx, text, x, y, color = '#afc0cc', align = 'right') {
+  /**
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {string} text
+   * @param {number} x
+   * @param {number} y
+   * @param {CanvasTextAlign} [align]
+   */
+  function label(
+    ctx,
+    text,
+    x,
+    y,
+    color = '#afc0cc',
+    align = /** @type {CanvasTextAlign} */ ('right'),
+  ) {
     ctx.fillStyle = color;
     ctx.textAlign = align;
     ctx.fillText(text, x, y);
@@ -94,20 +162,24 @@ export function initCollide(field) {
       dTop = h * 0.7,
       bottom = h - 26,
       pw = right - left;
+    /** @param {number} p */
     const phiY = (p) => top + (1 - (p + 2 * Math.PI) / (4 * Math.PI)) * (mid - top);
     pctx.strokeStyle = '#2b4153';
     pctx.lineWidth = 1;
+    /** @param {number} y */
     const hline = (y) => {
       pctx.beginPath();
       pctx.moveTo(left, y);
       pctx.lineTo(right, y);
       pctx.stroke();
     };
-    for (const [p, t] of [
+    /** @type {[number, string][]} */
+    const levels = [
       [2 * Math.PI, '2π'],
       [0, '0'],
       [-2 * Math.PI, '−2π'],
-    ]) {
+    ];
+    for (const [p, t] of levels) {
       hline(phiY(p));
       label(pctx, t, left - 8, phiY(p));
     }
@@ -126,6 +198,12 @@ export function initCollide(field) {
     hline(bottom);
     label(pctx, String(maxD), left - 8, dTop, '#f4b968');
     label(pctx, '0', left - 8, bottom, '#f4b968');
+    /**
+     * @param {number} k
+     * @param {(value: number) => number} yOf
+     * @param {string} color
+     * @param {number[]} [dash]
+     */
     function curve(k, yOf, color, dash = []) {
       pctx.beginPath();
       pctx.setLineDash(dash);
@@ -144,6 +222,7 @@ export function initCollide(field) {
     curve(2, (d) => bottom - (d / maxD) * (bottom - dTop), '#f4b968');
   }
 
+  /** @param {CollideState} state */
   function drawMap(state) {
     const [w, h] = size(map);
     if (!w || !h) return;
@@ -190,24 +269,26 @@ export function initCollide(field) {
     mctx.stroke();
   }
 
+  /** @type {(x: number, d: number) => string} */
   const fmt = (x, d) => (Number.isFinite(x) ? x.toFixed(d) : '—');
   function update() {
     const s = read();
     $('c-clock').textContent = `t = ${s.time.toFixed(1)}`;
-    $('c-energy').value = s.energy.toFixed(3);
+    $as('c-energy', HTMLOutputElement).value = s.energy.toFixed(3);
     $('c-energy-theory').textContent =
       mode === 0
         ? `theory 16γ = ${s.energyTheory.toFixed(3)}`
         : `theory 16√(1−ω²) = ${s.energyTheory.toFixed(3)}`;
-    $('c-momentum').value = Math.abs(s.momentum) < 5e-10 ? '0.000' : s.momentum.toExponential(1);
-    $('c-gap').value = s.gap.toFixed(3);
+    $as('c-momentum', HTMLOutputElement).value =
+      Math.abs(s.momentum) < 5e-10 ? '0.000' : s.momentum.toExponential(1);
+    $as('c-gap', HTMLOutputElement).value = s.gap.toFixed(3);
     if (mode === 0) {
       $('c-a-name').textContent = 'SHIFT, MEASURED';
-      $('c-a').value = s.done ? fmt(s.shift, 4) : 'after the run';
+      $as('c-a', HTMLOutputElement).value = s.done ? fmt(s.shift, 4) : 'after the run';
       $('c-a-theory').textContent = `theory 2√(1−v²) ln(1/v) = ${s.shiftTheory.toFixed(4)}`;
     } else {
       $('c-a-name').textContent = 'ω, MEASURED';
-      $('c-a').value = fmt(s.omega, 4);
+      $as('c-a', HTMLOutputElement).value = fmt(s.omega, 4);
       $('c-a-theory').textContent =
         `set ω = ${s.omegaTheory.toFixed(2)}; widest gap ${s.separation.toFixed(2)} (theory ${s.separationTheory.toFixed(2)})`;
     }
@@ -223,26 +304,28 @@ export function initCollide(field) {
     field._pw_reset(mode, param);
     update();
   }
+  /** @param {number} p */
   function setParam(p) {
     const [lo, hi] = RANGE[mode];
     param = Math.round(Math.max(lo, Math.min(hi, p)) * 100) / 100;
-    $('collide-param').value = param;
-    $('collide-param-label').value = param.toFixed(2);
-    for (const b of document.querySelectorAll('#collide-presets button'))
+    $as('collide-param', HTMLInputElement).value = String(param);
+    $as('collide-param-label', HTMLOutputElement).value = param.toFixed(2);
+    for (const b of buttonsOf('#collide-presets button'))
       b.classList.toggle('active', Number(b.dataset.p) === param);
     reset();
   }
+  /** @param {number} m */
   function setMode(m) {
     mode = m;
-    for (const b of document.querySelectorAll('[data-collide-mode]'))
+    for (const b of buttonsOf('[data-collide-mode]'))
       b.classList.toggle('active', Number(b.dataset.collideMode) === m);
     $('collide-param-name').textContent = m === 0 ? 'Speed of each, v' : 'Angular frequency, ω';
-    $('collide-param').min = RANGE[m][0];
-    $('collide-param').max = RANGE[m][1];
+    $as('collide-param', HTMLInputElement).min = String(RANGE[m][0]);
+    $as('collide-param', HTMLInputElement).max = String(RANGE[m][1]);
     $('collide-presets').replaceChildren(
       ...PRESETS[m].map((p) => {
         const b = document.createElement('button');
-        b.dataset.p = p;
+        b.dataset.p = String(p);
         b.textContent = m === 0 ? `${p} c` : `ω ${p}`;
         b.addEventListener('click', () => setParam(p));
         return b;
@@ -251,6 +334,7 @@ export function initCollide(field) {
     setParam(m === 0 ? 0.5 : 0.5);
   }
 
+  /** @param {number} now */
   function frame(now) {
     const seconds = last ? Math.min((now - last) / 1000, 0.1) : 0;
     last = now;
@@ -270,9 +354,11 @@ export function initCollide(field) {
     requestAnimationFrame(frame);
   }
 
-  for (const b of document.querySelectorAll('[data-collide-mode]'))
+  for (const b of buttonsOf('[data-collide-mode]'))
     b.addEventListener('click', () => setMode(Number(b.dataset.collideMode)));
-  $('collide-param').addEventListener('input', (e) => setParam(Number(e.target.value)));
+  $('collide-param').addEventListener('input', () =>
+    setParam(Number($as('collide-param', HTMLInputElement).value)),
+  );
   $('collide-run').addEventListener('click', () => {
     if (field._pw_value(V.done)) {
       reset();

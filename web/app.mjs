@@ -1,12 +1,59 @@
 import { initCollide } from './collide.mjs';
 import createField from './field.mjs';
 
-const $ = (id) => document.getElementById(id);
-const keys = new Set(),
-  pointers = new Map();
-let collide,
-  field,
-  paused = true,
+/** @param {string} id */
+const $ = (id) => {
+  const element = document.getElementById(id);
+  if (!element) throw new Error(`missing #${id}`);
+  return element;
+};
+/**
+ * @template {HTMLElement} T
+ * @param {string} id
+ * @param {{ new (): T, name: string }} type
+ * @returns {T}
+ */
+const $as = (id, type) => {
+  const element = $(id);
+  if (!(element instanceof type)) throw new Error(`#${id} is not a ${type.name}`);
+  return element;
+};
+/** @param {string} selector the buttons that match it */
+const buttonsOf = (selector) =>
+  [...document.querySelectorAll(selector)].filter(
+    (element) => element instanceof HTMLButtonElement,
+  );
+/**
+ * @param {EventTarget | null} target
+ * @param {string} selector
+ */
+const targetMatches = (target, selector) => target instanceof Element && target.matches(selector);
+/** @param {string} selector the element whose rendered height is wanted */
+const offsetHeightOf = (selector) => {
+  const element = document.querySelector(selector);
+  if (!(element instanceof HTMLElement)) throw new Error(`missing ${selector}`);
+  return element.offsetHeight;
+};
+/** The loaded C engine; the controls stay disabled until it is. */
+function core() {
+  if (!field) throw new Error('the C engine is not loaded');
+  return field;
+}
+/** @param {HTMLCanvasElement} canvas */
+const context2d = (canvas) => {
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('no 2D canvas context');
+  return context;
+};
+/** @type {Set<string>} */
+const keys = new Set();
+/** @type {Map<number, string>} */
+const pointers = new Map();
+/** @type {ReturnType<typeof initCollide> | null} */
+let collide = null;
+/** @type {import('./field.mjs').FieldModule | null} */
+let field = null;
+let paused = true,
   started = false,
   artLoaded = false,
   initialSpeed = 0,
@@ -14,8 +61,8 @@ let collide,
   mode = 'entry';
 let lastFrame = 0,
   accumulator = 0;
-const canvas = $('field-plot'),
-  ctx = canvas.getContext('2d');
+const canvas = $as('field-plot', HTMLCanvasElement),
+  ctx = context2d(canvas);
 const pi = Math.PI;
 const art = new Image();
 art.src = new URL('./assets/observatory.jpg', import.meta.url).href;
@@ -35,6 +82,7 @@ function clearInput() {
   $('left').classList.remove('active');
   $('right').classList.remove('active');
 }
+/** @param {boolean} value */
 function setPaused(value) {
   paused = value;
   clearInput();
@@ -44,7 +92,7 @@ function setPaused(value) {
 function reset() {
   clearInput();
   accumulator = 0;
-  field._fr_reset(initialSpeed);
+  core()._fr_reset(initialSpeed);
   paused = true;
   update();
 }
@@ -57,10 +105,11 @@ function start() {
   $('pause').focus({ preventScroll: true });
   if (collide) collide.update();
 }
+/** @param {number} speed */
 function selectSpeed(speed) {
   initialSpeed = speed;
-  $('speed').value = speed;
-  $('speed-label').value = `${speed.toFixed(2)} c`;
+  $as('speed', HTMLInputElement).value = String(speed);
+  $as('speed-label', HTMLOutputElement).value = `${speed.toFixed(2)} c`;
   reset();
 }
 function plot() {
@@ -74,6 +123,7 @@ function plot() {
   }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, width, height);
+  const field = core();
   const count = field._fr_count(),
     ptr = field._fr_samples();
   const samples = field.HEAPF64.subarray(ptr / 8, ptr / 8 + count * 2);
@@ -86,11 +136,18 @@ function plot() {
     bottom = height - 25;
   ctx.font = '14px system-ui';
   ctx.textBaseline = 'middle';
-  function label(text, x, y, color = '#afc0cc', align = 'right') {
+  /**
+   * @param {string} text
+   * @param {number} x
+   * @param {number} y
+   * @param {CanvasTextAlign} [align]
+   */
+  function label(text, x, y, color = '#afc0cc', align = /** @type {CanvasTextAlign} */ ('right')) {
     ctx.fillStyle = color;
     ctx.textAlign = align;
     ctx.fillText(text, x, y);
   }
+  /** @param {number} y */
   function line(y) {
     ctx.beginPath();
     ctx.moveTo(left, y);
@@ -99,11 +156,13 @@ function plot() {
   }
   ctx.strokeStyle = '#2b4153';
   ctx.lineWidth = 1;
-  for (const [f, t] of [
+  /** @type {[number, string][]} */
+  const levels = [
     [0, '2π'],
     [0.5, 'π'],
     [1, '0'],
-  ]) {
+  ];
+  for (const [f, t] of levels) {
     const y = top + f * (profileBottom - top);
     line(y);
     label(t, left - 10, y);
@@ -124,6 +183,12 @@ function plot() {
   label('ρ', left, densityTop - 12, '#f4b968', 'left');
   label(String(maxDensity), left - 10, densityTop, '#f4b968');
   label('0', left - 10, bottom, '#f4b968');
+  /**
+   * @param {(i: number) => number} value
+   * @param {(value: number) => number} yOf
+   * @param {string} color
+   * @param {number[]} [dash]
+   */
   function curve(value, yOf, color, dash = []) {
     ctx.beginPath();
     ctx.setLineDash(dash);
@@ -138,6 +203,7 @@ function plot() {
     ctx.stroke();
     ctx.setLineDash([]);
   }
+  /** @param {number} value */
   const phiY = (value) => profileBottom - (value / (2 * pi)) * (profileBottom - top);
   curve((i) => 4 * Math.atan(Math.exp(-12 + (24 * i) / (count - 1))), phiY, '#a7b5c5', [5, 5]);
   curve((i) => samples[2 * i], phiY, '#81e1f4');
@@ -161,11 +227,11 @@ function update() {
     energy: field._fr_energy(),
     width: field._fr_width(),
   };
-  $('time').value = state.time.toFixed(2);
-  $('velocity').value = state.velocity.toFixed(3);
-  $('energy').value = state.energy.toFixed(3);
-  $('width').value = state.width.toFixed(3);
-  $('position-label').value = `x = ${state.position.toFixed(2)}`;
+  $as('time', HTMLOutputElement).value = state.time.toFixed(2);
+  $as('velocity', HTMLOutputElement).value = state.velocity.toFixed(3);
+  $as('energy', HTMLOutputElement).value = state.energy.toFixed(3);
+  $as('width', HTMLOutputElement).value = state.width.toFixed(3);
+  $as('position-label', HTMLOutputElement).value = `x = ${state.position.toFixed(2)}`;
   $('position-marker').style.left = `${50 + (state.position / 150) * 100}%`;
   $('force-label').textContent = force
     ? `${force > 0 ? 'pushing right' : 'pushing left'} · ε = ${(-0.05 * force).toFixed(2)}`
@@ -173,12 +239,12 @@ function update() {
   const stateLabel = stopped ? 'Complete' : paused ? 'Paused' : 'Observing';
   if ($('state-label').textContent !== stateLabel) $('state-label').textContent = stateLabel;
   $('pause').textContent = paused ? 'Resume' : 'Pause';
-  $('pause').disabled = stopped;
-  $('left').disabled = stopped;
-  $('right').disabled = stopped;
+  $as('pause', HTMLButtonElement).disabled = stopped;
+  $as('left', HTMLButtonElement).disabled = stopped;
+  $as('right', HTMLButtonElement).disabled = stopped;
   $('limit-note').hidden = !stopped;
   document.body.classList.toggle('running', started && !paused);
-  for (const button of document.querySelectorAll('[data-speed]'))
+  for (const button of buttonsOf('[data-speed]'))
     button.classList.toggle('active', Number(button.dataset.speed) === initialSpeed);
   window.fieldView = {
     ...state,
@@ -196,6 +262,7 @@ function direction() {
   const held = new Set([...keys, ...pointers.values()]);
   return Number(held.has('right')) - Number(held.has('left'));
 }
+/** @param {number} now */
 function frame(now) {
   const seconds = lastFrame ? Math.min((now - lastFrame) / 1000, 0.1) : 0;
   lastFrame = now;
@@ -214,7 +281,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 for (const name of ['left', 'right']) {
-  const button = $(name);
+  const button = $as(name, HTMLButtonElement);
   button.addEventListener('pointerdown', (e) => {
     if (!started || !field || field._fr_stopped() || e.button !== 0) return;
     e.preventDefault();
@@ -225,7 +292,7 @@ for (const name of ['left', 'right']) {
   });
   for (const event of ['pointerup', 'pointercancel', 'lostpointercapture'])
     button.addEventListener(event, (e) => {
-      pointers.delete(e.pointerId);
+      if (e instanceof PointerEvent) pointers.delete(e.pointerId);
       button.classList.toggle('active', [...pointers.values()].includes(name));
     });
 }
@@ -234,14 +301,15 @@ document.addEventListener('keydown', (e) => {
     lineKey(e, true);
     return;
   }
-  if (!field || !started || mode !== 'free' || e.target.matches('input,select,textarea')) return;
+  if (!field || !started || mode !== 'free' || targetMatches(e.target, 'input,select,textarea'))
+    return;
   const key = e.key.toLowerCase();
   if (['a', 'd', 'arrowleft', 'arrowright'].includes(key)) {
     e.preventDefault();
     if (field._fr_stopped()) return;
     if (paused) setPaused(false);
     keys.add(key === 'a' || key === 'arrowleft' ? 'left' : 'right');
-  } else if (!e.repeat && key === ' ' && !e.target.matches('button,a')) {
+  } else if (!e.repeat && key === ' ' && !targetMatches(e.target, 'button,a')) {
     e.preventDefault();
     if (!field._fr_stopped()) setPaused(!paused);
   } else if (!e.repeat && key === 'r') reset();
@@ -272,53 +340,24 @@ $('collide-open').addEventListener('click', () => {
 $('line-start').addEventListener('click', () => lineStart());
 $('pause').addEventListener('click', () => setPaused(!paused));
 $('reset').addEventListener('click', reset);
-$('speed').addEventListener('input', (e) => selectSpeed(Number(e.target.value)));
-for (const button of document.querySelectorAll('[data-speed]'))
+$('speed').addEventListener('input', () =>
+  selectSpeed(Number($as('speed', HTMLInputElement).value)),
+);
+for (const button of buttonsOf('[data-speed]'))
   button.addEventListener('click', () => selectSpeed(Number(button.dataset.speed)));
 // ------------------------------------------------------------------ The Flood Line (src/line.c)
 // Every number of the night comes from C through _lw_value; only the words and the drawing live here.
-const lineFields = [
-  'x',
-  'v',
-  'vRead',
-  'time',
-  'charge',
-  'red',
-  'leg',
-  'scene',
-  'banner',
-  'fails',
-  'from',
-  'target',
-  'remaining',
-  'route',
-  'ford',
-  'count',
-  'wobble',
-  'ending',
-  'loud',
-  'heavy',
-  'command',
-  'redLine',
-  'held',
-  'holdNeed',
-  'leak',
-  'drift',
-  'cue',
-  'parked',
-  'energy',
-  'width',
-  'stopDistance',
-  'motor',
-  'coastV',
-];
-const lineCanvas = $('line-plot'),
-  lctx = lineCanvas.getContext('2d');
-const lineHeld = new Set(),
-  linePointers = new Map(),
-  heavyLog = [];
-let ls = null,
-  linePaused = true,
+const lineCanvas = $as('line-plot', HTMLCanvasElement),
+  lctx = context2d(lineCanvas);
+/** @type {Set<string>} */
+const lineHeld = new Set();
+/** @type {Map<number, string>} */
+const linePointers = new Map();
+/** @type {HeavyEntry[]} */
+const heavyLog = [];
+/** @type {LineState | null} */
+let ls = null;
+let linePaused = true,
   lineAcc = 0,
   shownScene = -2;
 // ?rate=2..4 runs the night faster (for the local smoke check); the solver steps are the same.
@@ -326,10 +365,60 @@ const lineRate = Math.max(
   1,
   Math.min(4, Math.floor(Number(new URLSearchParams(location.search).get('rate')) || 1)),
 );
-const lineRead = () => Object.fromEntries(lineFields.map((name, i) => [name, field._lw_value(i)]));
+/** @returns {LineState} every value of the night by name; the index is the enum LineValue order of src/line.h */
+const lineRead = () => {
+  const field = core();
+  return {
+    x: field._lw_value(0),
+    v: field._lw_value(1),
+    vRead: field._lw_value(2),
+    time: field._lw_value(3),
+    charge: field._lw_value(4),
+    red: field._lw_value(5),
+    leg: field._lw_value(6),
+    scene: field._lw_value(7),
+    banner: field._lw_value(8),
+    fails: field._lw_value(9),
+    from: field._lw_value(10),
+    target: field._lw_value(11),
+    remaining: field._lw_value(12),
+    route: field._lw_value(13),
+    ford: field._lw_value(14),
+    count: field._lw_value(15),
+    wobble: field._lw_value(16),
+    ending: field._lw_value(17),
+    loud: field._lw_value(18),
+    heavy: field._lw_value(19),
+    command: field._lw_value(20),
+    redLine: field._lw_value(21),
+    held: field._lw_value(22),
+    holdNeed: field._lw_value(23),
+    leak: field._lw_value(24),
+    drift: field._lw_value(25),
+    cue: field._lw_value(26),
+    parked: field._lw_value(27),
+    energy: field._lw_value(28),
+    width: field._lw_value(29),
+    stopDistance: field._lw_value(30),
+    motor: field._lw_value(31),
+    coastV: field._lw_value(32),
+  };
+};
 const lineDone = () => ls && ls.leg >= 5;
 
 // Scenes open where the C night says (src/line.c); index = LS_* in src/line.h.
+/**
+ * @typedef {object} Scene
+ * @property {string} id
+ * @property {string} title
+ * @property {string[][]} [lines]
+ * @property {string[][]} [fordLines]
+ * @property {string[][]} [endings]
+ * @property {string[]} options
+ * @property {boolean} [heavy]
+ * @property {string} [note]
+ */
+/** @type {Scene[]} */
 const SCENES = [
   {
     id: 'hut',
@@ -487,6 +576,7 @@ const LEG_NAMES = [
   'LEG 4 / 5 · THE WATER IN THE HUT',
   'LEG 5 / 5 · UP TO THE DAM ROAD',
 ];
+/** @type {[number, string][]} */
 const MARKS = [
   [18, 'WEIR'],
   [30, 'MILL'],
@@ -496,6 +586,7 @@ const MARKS = [
   [49, 'FORD'],
   [-10, 'DAM ROAD'],
 ];
+/** @param {number} x */
 function markName(x) {
   const m = MARKS.find(([p]) => Math.abs(p - x) < 0.01);
   return m ? m[1] : 'MARK';
@@ -509,8 +600,9 @@ function lineStart() {
   lineReset(false);
   if (innerHeight < 560) $('line').scrollIntoView({ block: 'start' });
 }
+/** @param {boolean} run */
 function lineReset(run) {
-  field._lw_reset();
+  core()._lw_reset();
   ls = lineRead();
   shownScene = -2;
   heavyLog.length = 0;
@@ -522,6 +614,7 @@ function lineReset(run) {
   lineUpdate();
   lineDraw();
 }
+/** @param {boolean} value */
 function linePause(value) {
   linePaused = value;
   lineAcc = 0;
@@ -529,7 +622,7 @@ function linePause(value) {
   linePointers.clear();
   reflectMotor();
   $('line-pause').textContent = lineDone() ? 'Night over' : linePaused ? 'Resume' : 'Pause';
-  $('line-pause').disabled = lineDone();
+  $as('line-pause', HTMLButtonElement).disabled = Boolean(lineDone());
 }
 const motorWanted = () => {
   const held = new Set([...lineHeld, ...linePointers.values()]);
@@ -537,15 +630,15 @@ const motorWanted = () => {
 };
 function reflectMotor() {
   const held = new Set([...lineHeld, ...linePointers.values()]);
-  for (const b of document.querySelectorAll('[data-motor]'))
-    b.setAttribute('aria-pressed', String(held.has(b.dataset.motor)));
+  for (const b of buttonsOf('[data-motor]'))
+    b.setAttribute('aria-pressed', String(held.has(b.dataset.motor ?? '')));
 }
 function showScene() {
   const box = $('scene'),
     index = ls && mode === 'line' ? ls.scene : -1;
   if (index === shownScene) return;
   shownScene = index;
-  if (index < 0) {
+  if (index < 0 || !ls) {
     box.hidden = true;
     return;
   }
@@ -570,7 +663,7 @@ function showScene() {
     ? s.endings[ls.ending === 0 ? 0 : 1].map((line) => ['', line])
     : s.fordLines && ls.ford === 0
       ? s.fordLines
-      : s.lines;
+      : (s.lines ?? []);
   for (const [who, words] of lines) {
     const p = document.createElement('p');
     if (who) {
@@ -598,26 +691,33 @@ function showScene() {
   });
   $('line-banner').hidden = true;
   box.scrollTop = 0;
-  options.firstChild.focus({ preventScroll: true });
+  const first = options.firstElementChild;
+  if (first instanceof HTMLElement) first.focus({ preventScroll: true });
 }
+/** @param {number} option */
 function lineAnswer(option) {
   if (!ls || ls.scene < 0) return;
   if (ls.scene === 6) {
     lineReset(false);
     return;
   }
-  field._lw_answer(option);
-  ls = lineRead();
+  core()._lw_answer(option);
+  const now = lineRead();
+  ls = now;
   showScene();
-  linePause(ls.scene >= 0);
+  linePause(now.scene >= 0);
   lineUpdate();
   lineDraw();
 }
+/**
+ * @param {number} value
+ * @param {number} digits
+ */
 function fmtSigned(value, digits) {
   return value.toFixed(digits).replace('-', '−');
 }
 function lineGoal() {
-  if (lineDone()) return 'The night is over.';
+  if (!ls || lineDone()) return 'The night is over.';
   const name = markName(ls.target);
   if (ls.drift > 0) return 'Motor stopped. Wait for the winding drum or catch arm to be ready.';
   const church = ls.leg === 1;
@@ -685,6 +785,7 @@ function lineUpdate() {
     callText: call,
   };
 }
+/** @param {number} seconds */
 function lineFrame(seconds) {
   if (!ls) return;
   if (mode === 'line' && !linePaused && !lineDone() && ls.scene < 0 && !document.hidden) {
@@ -693,8 +794,8 @@ function lineFrame(seconds) {
     const frames = Math.min(Math.floor(lineAcc), 6 * lineRate);
     lineAcc -= Math.floor(lineAcc);
     if (frames) {
-      field._lw_command(motorWanted());
-      field._lw_tick(frames);
+      core()._lw_command(motorWanted());
+      core()._lw_tick(frames);
       ls = lineRead();
     }
     if (ls.scene >= 0) {
@@ -705,8 +806,12 @@ function lineFrame(seconds) {
   lineUpdate();
   lineDraw();
 }
+/**
+ * @param {KeyboardEvent} e
+ * @param {boolean} down
+ */
 function lineKey(e, down) {
-  if (!ls || e.target.matches('input,select,textarea')) return;
+  if (!ls || targetMatches(e.target, 'input,select,textarea')) return;
   const key = e.key.toLowerCase();
   const name =
     key === 'a' || key === 'arrowleft' ? 'up' : key === 'd' || key === 'arrowright' ? 'down' : null;
@@ -725,7 +830,7 @@ function lineKey(e, down) {
     down &&
     !e.repeat &&
     key === ' ' &&
-    !e.target.matches('button,a') &&
+    !targetMatches(e.target, 'button,a') &&
     ls.scene < 0 &&
     !lineDone()
   ) {
@@ -750,11 +855,24 @@ function lineDraw() {
   c.clearRect(0, 0, w, h);
   c.font = '14px system-ui';
   c.textBaseline = 'middle';
-  const text = (t, x, y, colour = '#c6d3dd', align = 'left') => {
+  /**
+   * @param {string} t
+   * @param {number} x
+   * @param {number} y
+   * @param {CanvasTextAlign} [align]
+   */
+  const text = (t, x, y, colour = '#c6d3dd', align = /** @type {CanvasTextAlign} */ ('left')) => {
     c.fillStyle = colour;
     c.textAlign = align;
     c.fillText(t, x, y);
   };
+  /**
+   * @param {number} x1
+   * @param {number} y1
+   * @param {number} x2
+   * @param {number} y2
+   * @param {string} colour
+   */
   const seg = (x1, y1, x2, y2, colour, width = 1) => {
     c.strokeStyle = colour;
     c.lineWidth = width;
@@ -768,24 +886,30 @@ function lineDraw() {
     right = w - 14,
     pw = right - left;
   // Upper panel: the field around the turn (phi and energy density from C), with the next mark if it is in view.
+  const field = core();
   const count = field._lw_count(),
     ptr = field._lw_samples();
   const sm = field.HEAPF64.subarray(ptr / 8, ptr / 8 + count * 2);
-  const ptop = Math.min(topH * 0.55, document.querySelector('.line-top').offsetHeight + 44),
+  const ptop = Math.min(topH * 0.55, offsetHeightOf('.line-top') + 44),
     pbot = topH - 34;
+  /** @param {number} v */
   const phiY = (v) => pbot - (v / (2 * Math.PI)) * (pbot - ptop) * 0.62;
-  for (const [f, t] of [
+  /** @type {[number, string][]} */
+  const levels = [
     [0, '0'],
     [Math.PI, 'π'],
     [2 * Math.PI, '2π'],
-  ]) {
+  ];
+  for (const [f, t] of levels) {
     const y = phiY(f);
     seg(left, y, right, y, '#2b4153');
     text(t, left - 8, y, '#c6d3dd', 'right');
   }
+  /** @param {number} i */
   const xs = (i) => left + (i / (count - 1)) * pw;
   let maxD = 2;
   for (let i = 0; i < count; i++) maxD = Math.max(maxD, sm[2 * i + 1]);
+  /** @param {number} v */
   const dY = (v) => pbot - (v / maxD) * (pbot - ptop) * 0.3;
   const tx = left + ((ls.target - (ls.x - 12)) / 24) * pw;
   if (tx > left && tx < right) {
@@ -822,8 +946,9 @@ function lineDraw() {
   text('energy density', left + 72, pbot + 18, '#f4b968');
   text(`x = ${fmtSigned(ls.x, 1)}`, right, pbot + 18, '#c6d3dd', 'right');
   // Lower panel: the whole line, its posts and marks; water past the water line once the spill has come.
-  const ly = topH + (h - topH) * 0.48,
-    X = (x) => left + ((x + 52) / 104) * pw;
+  const ly = topH + (h - topH) * 0.48;
+  /** @param {number} x */
+  const X = (x) => left + ((x + 52) / 104) * pw;
   seg(left, topH + 2, right, topH + 2, '#304252');
   const wet = ls.leg >= 3,
     cut = ls.leg >= 4;
@@ -855,10 +980,10 @@ function lineDraw() {
     seg(px, ly - 10, px + arrow, ly - 10, '#e6edf2', 2);
   }
 }
-for (const button of document.querySelectorAll('[data-motor]')) {
+for (const button of buttonsOf('[data-motor]')) {
   const name = button.dataset.motor;
   button.addEventListener('pointerdown', (e) => {
-    if (!ls || ls.scene >= 0 || lineDone() || e.button !== 0) return;
+    if (!ls || !name || ls.scene >= 0 || lineDone() || e.button !== 0) return;
     e.preventDefault();
     button.setPointerCapture(e.pointerId);
     if (linePaused) linePause(false);
@@ -867,7 +992,7 @@ for (const button of document.querySelectorAll('[data-motor]')) {
   });
   for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture'])
     button.addEventListener(ev, (e) => {
-      linePointers.delete(e.pointerId);
+      if (e instanceof PointerEvent) linePointers.delete(e.pointerId);
       reflectMotor();
     });
 }
@@ -894,12 +1019,15 @@ $('line-leave').addEventListener('click', () => {
 // Common read-only test hook for the automated playability check (phone-sized, touch only).
 // Logical units are the canvas's CSS pixels. DOM words and buttons are measured by the gate directly.
 // The gate maps logical points through the largest visible canvas: the line in the story, the plot in free observation.
-const gateCanvas = () =>
-  [lineCanvas, canvas]
-    .map((c) => [c, c.getBoundingClientRect()])
-    .sort((a, b) => b[1].width * b[1].height - a[1].width * a[1].height)[0][0];
+/** @param {HTMLCanvasElement} c */
+const area = (c) => {
+  const r = c.getBoundingClientRect();
+  return r.width * r.height;
+};
+const gateCanvas = () => (area(canvas) > area(lineCanvas) ? canvas : lineCanvas);
+/** @param {Element | null} el */
 function fromCanvas(el) {
-  if (!el || el.hidden || !el.getClientRects().length) return null;
+  if (!el || (el instanceof HTMLElement && el.hidden) || !el.getClientRects().length) return null;
   const cb = gateCanvas().getBoundingClientRect(),
     r = el.getBoundingClientRect();
   return { x: r.left + r.width / 2 - cb.left, y: r.top + r.height / 2 - cb.top };
@@ -936,7 +1064,7 @@ window.__tmGate = {
     if (mode === 'entry') return fromCanvas($('line-start'));
     if (mode === 'free') return fromCanvas($('back-line'));
     if (mode !== 'line' || !ls) return null;
-    if (ls.scene >= 0) return fromCanvas($('scene-options').firstChild);
+    if (ls.scene >= 0) return fromCanvas($('scene-options').firstElementChild);
     if (linePaused && !lineDone()) return fromCanvas($('line-pause'));
     return null;
   },
@@ -944,10 +1072,10 @@ window.__tmGate = {
 try {
   field = await createField();
   field._fr_reset(0);
-  $('start').disabled = false;
-  $('line-start').disabled = false;
+  $as('start', HTMLButtonElement).disabled = false;
+  $as('line-start', HTMLButtonElement).disabled = false;
   collide = initCollide(field);
-  $('collide-open').disabled = false;
+  $as('collide-open', HTMLButtonElement).disabled = false;
   field._lw_reset();
   ls = lineRead();
   $('load-status').textContent = 'Ready · keyboard and touch controls';
