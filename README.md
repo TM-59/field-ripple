@@ -131,7 +131,7 @@ npx playwright install chromium
 make smoke
 ```
 
-Local-only standard entrypoints (M61, `~/project-context/rules/test-standard.json`):
+Local-only standard entrypoints:
 
 ```sh
 make check        # unit + requirement trace + bench + smoke
@@ -141,7 +141,7 @@ make test-perf    # make bench
 make test-e2e     # make smoke
 ```
 
-Each program is one CTest testcase (`tests/ctest/CMakeLists.txt`). The shared runner (`~/project-context/bin/tm-test.py`) runs them in a temporary copy of the tracked files and writes git-ignored `test-results/<run_id>/<kind>.xml` and `test-results/summary.json`. Needs `cc`, `cmake`/`ctest`, Python 3.14; the smoke also needs `emcc` and Playwright in the npm cache. Kinds not adopted and why: `test-inventory.json`.
+Each program is one CTest testcase (`tests/ctest/CMakeLists.txt`). A shared local runner runs them in a temporary copy of the tracked files and writes git-ignored `test-results/<run_id>/<kind>.xml` and `test-results/summary.json`. Needs `cc`, `cmake`/`ctest`, Python 3.14; the smoke also needs `emcc` and Playwright in the npm cache. Kinds not adopted and why: `test-inventory.json`.
 
 The smoke check uses real keyboard and touch input under a non-root URL path, checks numerical results, pause/reset/focus loss, observation limits, missing-art fallback and external requests, runs two whole Flood Line nights with real keys (both endings, heavy scenes with no banner), checks phone sizes upright and sideways (words 14 CSS px or more, targets 44 px or more, the plot over half the screen), runs the collision panel with real clicks, keys and taps (WASM shift and ω equal to the native `./test_pair` values; 390×844 and 844×390 words and targets; 1440 and 1024 px without horizontal scroll), and refreshes the screenshots. CI runs only `docker build .` (make test and make plots) on pull requests. Human first-use feedback, physical mobile devices and other browser engines are **unverified / 未検証**. This change does not deploy or submit the application.
 
