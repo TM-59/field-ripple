@@ -15,3 +15,6 @@ story_bench
 .sweep/
 theory_figs
 test_pair
+test-results/
+.tm-ctest/
+.tm-home/
