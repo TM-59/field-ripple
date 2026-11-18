@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-"""Checks docs/theory: every statement has a page section and a figure, every link and figure exists,
-every referenced function / test token is still in the source, and every public function is listed.
+# Copyright 2026 TM-59
+"""Check docs/theory against the code.
+
+Every statement has a page section and a figure, every link and figure exists, every referenced
+function / test token is still in the source, and every public function is listed.
 
 Run: make theory-check   (standard library only)
 """
@@ -11,14 +14,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 THEORY = ROOT / "docs/theory"
-errors = []
+errors: list[str] = []
 
 
-def fail(message):
+def fail(message: str) -> None:
+    """Record one problem; all of them are printed at the end."""
     errors.append(message)
 
 
-def refs(cell):
+def refs(cell: str) -> list[tuple[str, str]]:
+    """Return the (file, name) pairs of the `file#name` references in a table cell."""
     return re.findall(r"`([^`#\s]+)#([^`\n]+)`", cell)
 
 
@@ -35,16 +40,20 @@ rows = {}
 for line in index.splitlines():
     m = re.match(r"\| (S\d\d) \| (.+?) \| \[\d\]\(([^)]+)\) \| (.+?) \| (.+?) \| (.+?) \|$", line)
     if m:
-        rows[m.group(1)] = dict(
-            page=m.group(3), figure=m.group(4), code=m.group(5), test=m.group(6)
-        )
+        rows[m.group(1)] = {
+            "page": m.group(3),
+            "figure": m.group(4),
+            "code": m.group(5),
+            "test": m.group(6),
+        }
 if not rows:
     fail("coverage table not found in docs/theory/README.md")
 
-# 2. page sections: each "## Sxx" has a figure (image or mermaid) before the next section, and the listed parts in order
+# 2. page sections: each "## Sxx" has a figure (image or mermaid) before the next section,
+#    and the listed parts in order
 sections = {}
 for name, text in pages.items():
-    for m in re.finditer(r"^## (S\d\d) — .*$", text, flags=re.M):
+    for m in re.finditer(r"^## (S\d\d) — .*$", text, flags=re.MULTILINE):
         end = text.find("\n## ", m.end())
         sections[m.group(1)] = (name, text[m.end() : end if end > 0 else len(text)])
 for sid in sorted(set(rows) | set(sections)):
@@ -90,7 +99,8 @@ for sid in sorted(set(rows) | set(sections)):
                     or f"`{token}`" not in values
                 ):
                     fail(
-                        f"{sid}: measured value {token} is not produced by tests/theory_figs.c / values.md"
+                        f"{sid}: measured value {token} is not produced by "
+                        "tests/theory_figs.c / values.md"
                     )
             elif token not in path.read_text(encoding="utf-8"):
                 fail(f"{sid}: {token} is no longer in {file}")
@@ -105,7 +115,7 @@ for name, text in pages.items():
             and f"`{key}`" not in values
             and not key.startswith("make")
         ):
-            if key in ("stateDiagram-v2",):
+            if key == "stateDiagram-v2":
                 continue
             fail(f"{name}: quotes value `{key}` that figures/values.md does not have")
 
@@ -121,7 +131,7 @@ for header in sorted((ROOT / "src").glob("*.h")):
     for fn in re.findall(
         r"^[A-Za-z_][\w \*]*?\b([a-z]+_[a-z0-9_]+)\(",
         header.read_text(encoding="utf-8"),
-        flags=re.M,
+        flags=re.MULTILINE,
     ):
         if fn not in mentioned:
             fail(
@@ -129,10 +139,11 @@ for header in sorted((ROOT / "src").glob("*.h")):
             )
 
 if errors:
-    print("\n".join(errors))
-    print(f"theory-check: {len(errors)} problem(s)")
+    sys.stdout.write("\n".join(errors) + "\n")
+    sys.stdout.write(f"theory-check: {len(errors)} problem(s)\n")
     sys.exit(1)
-print(
-    f"theory-check: OK ({len(rows)} statements, each with a figure; {sum(1 for _ in THEORY.glob('figures/*.svg'))} generated figures; "
-    f"{len(mentioned)} functions/tests/values referenced)"
+figures = sum(1 for _ in THEORY.glob("figures/*.svg"))
+sys.stdout.write(
+    f"theory-check: OK ({len(rows)} statements, each with a figure; {figures} generated figures; "
+    f"{len(mentioned)} functions/tests/values referenced)\n"
 )

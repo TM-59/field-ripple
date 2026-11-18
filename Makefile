@@ -71,7 +71,7 @@ web: dist/field.mjs
 	cp web/index.html web/style.css web/app.mjs web/collide.mjs dist/
 	mkdir -p dist/assets
 	cp assets/observatory.jpg dist/assets/
-	python3 scripts/check-size.py
+	python3 scripts/check_size.py
 
 dist/field.mjs: src/field.c src/observer.c src/line.c src/line_web.c src/pair.c src/pair_web.c src/field.h src/observer.h src/line.h src/pair.h
 	mkdir -p dist
@@ -104,7 +104,7 @@ theory-figs: theory_figs
 
 # Fails when a statement of docs/theory has no figure, a link is broken, or a referenced function or test is gone.
 theory-check:
-	python3 scripts/theory-check.py
+	python3 scripts/theory_check.py
 
 clean:
 	rm -f field-ripple test_field test_gif test_observer bench_field test_line story_bench theory_figs test_pair
@@ -121,13 +121,13 @@ TM_UNIT_BINS := test_field test_gif test_observer test_line test_pair story_benc
 
 .PHONY: test-unit check test-trace test-perf test-e2e tm-ctest tm-deps test-tm-unit test-tm-trace test-tm-perf test-tm-e2e
 test-unit:
-	$(TM_TEST_PYTHON) scripts/local-test.py unit
+	$(TM_TEST_PYTHON) scripts/local_test.py unit
 
 check:
-	$(TM_TEST_PYTHON) scripts/local-test.py all
+	$(TM_TEST_PYTHON) scripts/local_test.py all
 
 test-trace test-perf test-e2e:
-	$(TM_TEST_PYTHON) scripts/local-test.py $(@:test-%=%)
+	$(TM_TEST_PYTHON) scripts/local_test.py $(@:test-%=%)
 
 tm-ctest:
 	mkdir -p test-results
