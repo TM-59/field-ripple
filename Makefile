@@ -12,7 +12,7 @@ PORT    ?= 4190
 all: field-ripple
 
 field-ripple: $(SRC) src/main.c src/pair.h
-	$(CC) $(CFLAGS) -o $@ $(SRC) src/main.c $(LDLIBS)
+	$(CC) $(CFLAGS) $(POSIX) -o $@ $(SRC) src/main.c $(LDLIBS)
 
 test_field: $(SRC) tests/test_field.c
 	$(CC) $(CFLAGS) -o $@ $(SRC) tests/test_field.c $(LDLIBS)

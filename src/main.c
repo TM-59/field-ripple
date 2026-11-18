@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -55,12 +54,14 @@ static int headless(const char *dir)
         }
         field_free(&f);
     }
-    snprintf(path, sizeof path, "%s/profile.svg", dir);
+    (void)snprintf(path, sizeof path, "%s/profile.svg", dir);
     Series sp[] = {{"v = 0", prof[0], "#1f77b4"},
                    {"v = 0.6c", prof[1], "#ff7f0e"},
                    {"v = 0.9c", prof[2], "#d62728"}};
-    if (svg_plot(path, "Kink energy density profile phi_x: Lorentz contraction", "x - X(t)",
-                 "phi_x", s, M, sp, 3)) {
+    if (svg_plot(
+            path,
+            &(Chart){"Kink energy density profile phi_x: Lorentz contraction", "x - X(t)", "phi_x"},
+            s, M, sp, 3)) {
         return 1;
     }
 
@@ -80,9 +81,10 @@ static int headless(const char *dir)
         }
     }
     field_free(&f);
-    snprintf(path, sizeof path, "%s/energy.svg", dir);
+    (void)snprintf(path, sizeof path, "%s/energy.svg", dir);
     Series se[] = {{"E / E0 - 1", de, "#2ca02c"}};
-    if (svg_plot(path, "Energy conservation of a 0.8c kink", "t", "relative drift", t, N, se, 1)) {
+    if (svg_plot(path, &(Chart){"Energy conservation of a 0.8c kink", "t", "relative drift"}, t, N,
+                 se, 1)) {
         return 1;
     }
 
@@ -91,12 +93,12 @@ static int headless(const char *dir)
     }
     f.eps = eps;
     field_set_kink(&f, 0.0, 0.0, 1);
-    snprintf(path, sizeof path, "%s/run.csv", dir);
+    (void)snprintf(path, sizeof path, "%s/run.csv", dir);
     FILE *csv = fopen(path, "w");
     if (!csv) {
         return 1;
     }
-    fprintf(csv, "t,x,speed_sim,speed_theory\n");
+    (void)fprintf(csv, "t,x,speed_sim,speed_theory\n");
     double prev = field_kink_position(&f);
     for (int i = 0; i < N; i++) {
         for (int k = 0; k < 5; k++) {
@@ -107,14 +109,17 @@ static int headless(const char *dir)
         vs[i] = (float)fabs((x - prev) / 0.25);
         vt[i] = (float)(p / sqrt(p * p + 64.0));
         prev = x;
-        fprintf(csv, "%.2f,%.4f,%.4f,%.4f\n", tt, x, vs[i], vt[i]);
+        (void)fprintf(csv, "%.2f,%.4f,%.4f,%.4f\n", tt, x, vs[i], vt[i]);
     }
-    fclose(csv);
+    if (fclose(csv) != 0) {
+        return 1;
+    }
     field_free(&f);
-    snprintf(path, sizeof path, "%s/push.svg", dir);
+    (void)snprintf(path, sizeof path, "%s/push.svg", dir);
     Series sv[] = {{"simulation", vs, "#d62728"}, {"theory p/E", vt, "#1f77b4"}};
-    if (svg_plot(path, "A constant bias pushes the kink: speed saturates below c", "t", "v", t, N,
-                 sv, 2)) {
+    if (svg_plot(path,
+                 &(Chart){"A constant bias pushes the kink: speed saturates below c", "t", "v"}, t,
+                 N, sv, 2)) {
         return 1;
     }
     printf("v(t=100): sim %.3f, theory %.3f\n", vs[399], vt[399]);
@@ -134,7 +139,7 @@ static int snapshot(void)
     static char buf[RENDER_COLS * RENDER_ROWS * 4];
     int ok = render_frame(&f, field_kink_position(&f), TARGET, buf, sizeof buf) != 0;
     if (ok) {
-        fputs(buf, stdout);
+        (void)fputs(buf, stdout);
     }
     field_free(&f);
     return ok ? 0 : 1;
@@ -252,7 +257,7 @@ static int collide(const char *dir)
         field_free(&f);
     }
     char path[512];
-    snprintf(path, sizeof path, "%s/collision.gif", dir);
+    (void)snprintf(path, sizeof path, "%s/collision.gif", dir);
     Gif *g = gif_open(path, W, PH, pal, 100);
     if (!g || gif_frame(g, px, 0) || gif_close(g)) {
         return 1;
@@ -269,13 +274,13 @@ static struct termios saved;
 static void restore(void)
 {
     tcsetattr(STDIN_FILENO, TCSANOW, &saved);
-    fputs("\033[?25h", stdout);
+    (void)fputs("\033[?25h", stdout);
 }
 
 static int play(void)
 {
     if (!isatty(STDIN_FILENO)) {
-        fputs("interactive mode needs a terminal; try --snapshot\n", stderr);
+        (void)fputs("interactive mode needs a terminal; try --snapshot\n", stderr);
         return 1;
     }
     Field f;
@@ -285,12 +290,15 @@ static int play(void)
     field_set_kink(&f, 0.0, 0.0, 1);
     tcgetattr(STDIN_FILENO, &saved);
     struct termios raw = saved;
-    raw.c_lflag &= ~(ICANON | ECHO);
+    raw.c_lflag &= ~((tcflag_t)ICANON | (tcflag_t)ECHO);
     raw.c_cc[VMIN] = 0;
     raw.c_cc[VTIME] = 0;
     tcsetattr(STDIN_FILENO, TCSANOW, &raw);
-    atexit(restore);
-    fputs("\033[2J\033[?25l", stdout);
+    if (atexit(restore) != 0) {
+        restore();
+        return 1;
+    }
+    (void)fputs("\033[2J\033[?25l", stdout);
 
     static char buf[RENDER_COLS * RENDER_ROWS * 4];
     struct timespec tick = {0, 40 * 1000000L};
@@ -333,7 +341,7 @@ static int play(void)
         printf("t %6.1f  kink at %6.2f  v %+.3f  gamma %.2f  width ~ %.2f    \n", t, x, v, gamma,
                1.0 / gamma);
         puts("a/d push left/right  p pause  q quit    park the kink on the | mark");
-        fflush(stdout);
+        (void)fflush(stdout);
         if (fabs(x - TARGET) < 0.5 && fabs(v) < 0.03) {
             puts("\nParked on target!");
             return 0;

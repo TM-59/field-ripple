@@ -48,13 +48,13 @@ static void play_row(char *buf, size_t cap, int i, const RunResult *r)
             first = 0;
         }
     }
-    snprintf(buf + n, cap - n, "]}");
+    (void)snprintf(buf + n, cap - n, "]}");
 }
 
 static void ablation_row(char *buf, size_t cap, int i, const RunResult *r)
 {
-    snprintf(buf, cap, "{\"seed\": \"%d\", \"seconds\": %.2f, \"fails\": %d, \"red\": %.2f}", i,
-             r->seconds, r->fails, r->red);
+    (void)snprintf(buf, cap, "{\"seed\": \"%d\", \"seconds\": %.2f, \"fails\": %d, \"red\": %.2f}",
+                   i, r->seconds, r->fails, r->red);
 }
 
 static void tension_row(char *buf, size_t cap, int i, int run, const RunResult *r)
@@ -73,7 +73,7 @@ static void tension_row(char *buf, size_t cap, int i, int run, const RunResult *
     for (int k = 0; k < L_LEGS; k++) {
         n += (size_t)snprintf(buf + n, cap - n, "%s%d", k ? ", " : "", r->failure[k]);
     }
-    snprintf(buf + n, cap - n, "]}");
+    (void)snprintf(buf + n, cap - n, "]}");
 }
 
 /* ------------------------------------------------------------------ arms */
@@ -108,13 +108,23 @@ static Job tension_job(int i, int run)
 static FILE *open_out(const char *dir, const char *name)
 {
     char path[512];
-    snprintf(path, sizeof path, "%s/%s", dir, name);
+    (void)snprintf(path, sizeof path, "%s/%s", dir, name);
     FILE *f = fopen(path, "w");
     if (!f) {
-        fprintf(stderr, "cannot write %s\n", path);
+        (void)fprintf(stderr, "cannot write %s\n", path);
         exit(1);
     }
     return f;
+}
+
+/* A short or failed write would leave a truncated table; stop with an error instead. */
+static void close_out(FILE *f)
+{
+    int bad = ferror(f) != 0;
+    if (fclose(f) != 0 || bad) {
+        (void)fprintf(stderr, "write error\n");
+        exit(1);
+    }
 }
 
 static void write_rows(FILE *f, const char *indent, const RunResult *res, int arm)
@@ -122,17 +132,17 @@ static void write_rows(FILE *f, const char *indent, const RunResult *res, int ar
     char row[256];
     for (int i = 0; i < ABLATION_SEEDS; i++) {
         ablation_row(row, sizeof row, i, &res[arm * ABLATION_SEEDS + i]);
-        fprintf(f, "%s%s%s\n", indent, row, i + 1 < ABLATION_SEEDS ? "," : "");
+        (void)fprintf(f, "%s%s%s\n", indent, row, i + 1 < ABLATION_SEEDS ? "," : "");
     }
 }
 
 static void write_arm_pair(FILE *f, const char *name, const RunResult *res, int off, int last)
 {
-    fprintf(f, "    \"%s\": {\n      \"on\": [\n", name);
+    (void)fprintf(f, "    \"%s\": {\n      \"on\": [\n", name);
     write_rows(f, "        ", res, ARM_ON);
-    fprintf(f, "      ],\n      \"off\": [\n");
+    (void)fprintf(f, "      ],\n      \"off\": [\n");
     write_rows(f, "        ", res, off);
-    fprintf(f, "      ]\n    }%s\n", last ? "" : ",");
+    (void)fprintf(f, "      ]\n    }%s\n", last ? "" : ",");
 }
 
 static const char *GEN = "tests/story_bench.c (make story)";
@@ -141,37 +151,39 @@ static const char *GEN = "tests/story_bench.c (make story)";
  * code fails make test. */
 static void metric_texts(char *buf, size_t cap)
 {
-    snprintf(buf, cap,
-             "  \"metrics\": {\n"
-             "    \"seconds\": {\"better\": \"lower\", \"kind\": \"outcome\", \"felt\": "
-             "\"screen\", \"label\": \"t on the night clock at first light (shown as the clock); "
-             "every t is run through the solver (the held bells and a dry cell being cranked "
-             "included, no flat additions)\"},\n"
-             "    \"fails\": {\"better\": \"lower\", \"kind\": \"outcome\", \"felt\": \"screen\", "
-             "\"label\": \"failures in the night: a turn lost and relaunched at the last mark (it "
-             "ran off the posts, wandered %.0f t, or the cell went dry after the cut), a dry cell "
-             "Kit has to crank, or a catch arm struck and the motor jammed; each raises a failure "
-             "banner and counts on the Failures counter\"},\n"
-             "    \"red\": {\"better\": \"lower\", \"kind\": \"resource\", \"felt\": \"resource\", "
-             "\"label\": \"t run with the cell gauge in the red (charge below %.2f); a reading of "
-             "the charge the beats change, not a play result\"}\n"
-             "  },\n",
-             LINE_LEG_LIMIT, LINE_RED_LINE);
+    (void)snprintf(
+        buf, cap,
+        "  \"metrics\": {\n"
+        "    \"seconds\": {\"better\": \"lower\", \"kind\": \"outcome\", \"felt\": "
+        "\"screen\", \"label\": \"t on the night clock at first light (shown as the clock); "
+        "every t is run through the solver (the held bells and a dry cell being cranked "
+        "included, no flat additions)\"},\n"
+        "    \"fails\": {\"better\": \"lower\", \"kind\": \"outcome\", \"felt\": \"screen\", "
+        "\"label\": \"failures in the night: a turn lost and relaunched at the last mark (it "
+        "ran off the posts, wandered %.0f t, or the cell went dry after the cut), a dry cell "
+        "Kit has to crank, or a catch arm struck and the motor jammed; each raises a failure "
+        "banner and counts on the Failures counter\"},\n"
+        "    \"red\": {\"better\": \"lower\", \"kind\": \"resource\", \"felt\": \"resource\", "
+        "\"label\": \"t run with the cell gauge in the red (charge below %.2f); a reading of "
+        "the charge the beats change, not a play result\"}\n"
+        "  },\n",
+        LINE_LEG_LIMIT, LINE_RED_LINE);
 }
 
 static void tension_texts(char *buf, size_t cap)
 {
     char policy[2048];
     keeper_describe(policy, sizeof policy);
-    snprintf(buf, cap,
-             "  \"policy\": \"%s\",\n"
-             "  \"crisis\": \"the cell gauge in the red (charge below %.2f) at any moment in the "
-             "leg, or a failure (a failure counts as a crisis)\",\n"
-             "  \"failure\": \"the cell ran dry (Kit cranks it, or after the cut the turn is "
-             "lost), the turn ran off the posts or wandered "
-             "%.0f t without a held mark and was relaunched, or it struck a catch arm too fast and "
-             "jammed the motor\",\n",
-             policy, LINE_RED_LINE, LINE_LEG_LIMIT);
+    (void)snprintf(
+        buf, cap,
+        "  \"policy\": \"%s\",\n"
+        "  \"crisis\": \"the cell gauge in the red (charge below %.2f) at any moment in the "
+        "leg, or a failure (a failure counts as a crisis)\",\n"
+        "  \"failure\": \"the cell ran dry (Kit cranks it, or after the cut the turn is "
+        "lost), the turn ran off the posts or wandered "
+        "%.0f t without a held mark and was relaunched, or it struck a catch arm too fast and "
+        "jammed the motor\",\n",
+        policy, LINE_RED_LINE, LINE_LEG_LIMIT);
 }
 
 static void run_all(RunResult *res, int np, int na)
@@ -241,68 +253,71 @@ static int write_all(const char *dir)
     char row[1024];
 
     FILE *f = open_out(dir, "play-order.json");
-    fprintf(f,
-            "{\n  \"version\": 1,\n  \"generator\": \"%s\",\n  \"note\": \"Scenes open at fixed "
-            "progress points: the start of the night and the end of a leg. "
-            "stones 0 = the mill bell, 1 = the church bell; ford 0 = the ford bell, 1 = the hill "
-            "siren. quiet lists the heavy scenes "
-            "shown with no 'mark held' banner raised before the next frame of the line. Do not "
-            "edit by hand.\",\n  \"seeds\": [\n",
-            GEN);
+    (void)fprintf(
+        f,
+        "{\n  \"version\": 1,\n  \"generator\": \"%s\",\n  \"note\": \"Scenes open at fixed "
+        "progress points: the start of the night and the end of a leg. "
+        "stones 0 = the mill bell, 1 = the church bell; ford 0 = the ford bell, 1 = the hill "
+        "siren. quiet lists the heavy scenes "
+        "shown with no 'mark held' banner raised before the next frame of the line. Do not "
+        "edit by hand.\",\n  \"seeds\": [\n",
+        GEN);
     for (int i = 0; i < np; i++) {
         play_row(row, sizeof row, i, &res[i]);
-        fprintf(f, "    %s%s\n", row, i + 1 < np ? "," : "");
+        (void)fprintf(f, "    %s%s\n", row, i + 1 < np ? "," : "");
     }
-    fprintf(f, "  ]\n}\n");
-    fclose(f);
+    (void)fprintf(f, "  ]\n}\n");
+    close_out(f);
 
     const RunResult *ab = res + np;
     f = open_out(dir, "ablation.json");
-    fprintf(f,
-            "{\n  \"version\": 1,\n  \"generator\": \"%s\",\n  \"note\": \"Same %d seeds in every "
-            "arm. on = all story numbers, the church bell and the hill siren; "
-            "off = scenes still open but every story number is neutral; beats = only that scene's "
-            "numbers removed; choices = one choice fixed per path, "
-            "the other at its default. Do not edit by hand.\",\n",
-            GEN, ABLATION_SEEDS);
+    (void)fprintf(
+        f,
+        "{\n  \"version\": 1,\n  \"generator\": \"%s\",\n  \"note\": \"Same %d seeds in every "
+        "arm. on = all story numbers, the church bell and the hill siren; "
+        "off = scenes still open but every story number is neutral; beats = only that scene's "
+        "numbers removed; choices = one choice fixed per path, "
+        "the other at its default. Do not edit by hand.\",\n",
+        GEN, ABLATION_SEEDS);
     char head[4096];
     metric_texts(head, sizeof head);
-    fprintf(f, "%s  \"effects\": {\n    \"on\": [\n", head);
+    (void)fprintf(f, "%s  \"effects\": {\n    \"on\": [\n", head);
     write_rows(f, "      ", ab, ARM_ON);
-    fprintf(f, "    ],\n    \"off\": [\n");
+    (void)fprintf(f, "    ],\n    \"off\": [\n");
     write_rows(f, "      ", ab, ARM_OFF);
-    fprintf(f, "    ]\n  },\n  \"beats\": {\n");
+    (void)fprintf(f, "    ]\n  },\n  \"beats\": {\n");
     write_arm_pair(f, "hut", ab, ARM_HUT, 0);
     write_arm_pair(f, "bell", ab, ARM_BOARD, 0);
     write_arm_pair(f, "spill", ab, ARM_SPILL, 0);
     write_arm_pair(f, "cut", ab, ARM_CUT, 1);
-    fprintf(f, "  },\n  \"choices\": {\n    \"stones\": {\"paths\": {\n      \"0\": [\n");
+    (void)fprintf(f, "  },\n  \"choices\": {\n    \"stones\": {\"paths\": {\n      \"0\": [\n");
     write_rows(f, "        ", ab, ARM_MILL);
-    fprintf(f, "      ],\n      \"1\": [\n");
+    (void)fprintf(f, "      ],\n      \"1\": [\n");
     write_rows(f, "        ", ab, ARM_ON);
-    fprintf(f, "      ]\n    }},\n    \"ford\": {\"paths\": {\n      \"0\": [\n");
+    (void)fprintf(f, "      ]\n    }},\n    \"ford\": {\"paths\": {\n      \"0\": [\n");
     write_rows(f, "        ", ab, ARM_FORD);
-    fprintf(f, "      ],\n      \"1\": [\n");
+    (void)fprintf(f, "      ],\n      \"1\": [\n");
     write_rows(f, "        ", ab, ARM_ON);
-    fprintf(f, "      ]\n    }}\n  }\n}\n");
-    fclose(f);
+    (void)fprintf(f, "      ]\n    }}\n  }\n}\n");
+    close_out(f);
 
     const RunResult *tn = res + np + na;
     f = open_out(dir, "tension.json");
     tension_texts(head, sizeof head);
-    fprintf(f, "{\n  \"version\": 1,\n  \"generator\": \"%s\",\n%s", GEN, head);
-    fprintf(f,
-            "  \"segments\": [\"to the weir\", \"to the bell\", \"back to the gorge\", \"the water "
-            "in the hut\", \"up to the dam road\"],\n"
-            "  \"note\": \"%d seeds x %d nights; every night has its own stirred seed; the path "
-            "comes from the night number.\",\n  \"seeds\": [\n",
-            TENSION_SEEDS, TENSION_RUNS);
+    (void)fprintf(f, "{\n  \"version\": 1,\n  \"generator\": \"%s\",\n%s", GEN, head);
+    (void)fprintf(
+        f,
+        "  \"segments\": [\"to the weir\", \"to the bell\", \"back to the gorge\", \"the water "
+        "in the hut\", \"up to the dam road\"],\n"
+        "  \"note\": \"%d seeds x %d nights; every night has its own stirred seed; the path "
+        "comes from the night number.\",\n  \"seeds\": [\n",
+        TENSION_SEEDS, TENSION_RUNS);
     for (int i = 0; i < nt; i++) {
         tension_row(row, sizeof row, i / TENSION_RUNS, i % TENSION_RUNS, &tn[i]);
-        fprintf(f, "    %s%s\n", row, i + 1 < nt ? "," : "");
+        (void)fprintf(f, "    %s%s\n", row, i + 1 < nt ? "," : "");
     }
-    fprintf(f, "  ]\n}\n");
-    fclose(f);
+    (void)fprintf(f, "  ]\n}\n");
+    close_out(f);
 
     double sec = 0;
     for (int i = 0; i < ABLATION_SEEDS; i++) {
@@ -318,21 +333,35 @@ static int write_all(const char *dir)
 static char *slurp(const char *dir, const char *name)
 {
     char path[512];
-    snprintf(path, sizeof path, "%s/%s", dir, name);
+    (void)snprintf(path, sizeof path, "%s/%s", dir, name);
     FILE *f = fopen(path, "rb");
     if (!f) {
-        fprintf(stderr, "missing %s\n", path);
+        (void)fprintf(stderr, "missing %s\n", path);
         exit(1);
     }
-    fseek(f, 0, SEEK_END);
-    long size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    char *buf = malloc((size_t)size + 1);
-    if (!buf || fread(buf, 1, (size_t)size, f) != (size_t)size) {
+    /* Read in growing chunks; the bench files are tens of kB. */
+    size_t cap = 65536, len = 0;
+    char *buf = malloc(cap);
+    if (!buf) {
         exit(1);
     }
-    buf[size] = 0;
-    fclose(f);
+    for (;;) {
+        len += fread(buf + len, 1, cap - 1 - len, f);
+        if (len < cap - 1) {
+            break;
+        }
+        char *bigger = realloc(buf, cap * 2);
+        if (!bigger) {
+            exit(1);
+        }
+        buf = bigger;
+        cap *= 2;
+    }
+    if (ferror(f)) {
+        exit(1);
+    }
+    buf[len] = 0;
+    (void)fclose(f); /* read only: nothing is lost if closing fails */
     return buf;
 }
 
@@ -362,7 +391,7 @@ static int check(const char *dir)
     qsort(keys, (size_t)nk, sizeof *keys, cmp_key);
     for (int i = 1; i < nk; i++) {
         if (keys[i] == keys[i - 1]) {
-            fputs("[seed] duplicate run key\n", stderr);
+            (void)fputs("[seed] duplicate run key\n", stderr);
             failures++;
         }
     }
@@ -405,8 +434,8 @@ static int check(const char *dir)
             found++;
         }
         if (found != copies[i]) {
-            fprintf(stderr, "[bench] %s.json does not match the code (%d of %d copies): %s\n", file,
-                    found, copies[i], row);
+            (void)fprintf(stderr, "[bench] %s.json does not match the code (%d of %d copies): %s\n",
+                          file, found, copies[i], row);
             failures++;
         }
     }
@@ -414,21 +443,22 @@ static int check(const char *dir)
     char text[4096];
     metric_texts(text, sizeof text);
     if (!strstr(abl, text)) {
-        fputs("[text] ablation.json metric labels do not match the code's constants\n", stderr);
+        (void)fputs("[text] ablation.json metric labels do not match the code's constants\n",
+                    stderr);
         failures++;
     }
     tension_texts(text, sizeof text);
     if (!strstr(ten, text)) {
-        fputs("[text] tension.json policy/crisis/failure do not match the code's constants\n",
-              stderr);
+        (void)fputs("[text] tension.json policy/crisis/failure do not match the code's constants\n",
+                    stderr);
         failures++;
     }
     free(play);
     free(abl);
     free(ten);
     if (failures) {
-        fprintf(stderr, "story bench check: %d failure(s); run make story to regenerate\n",
-                failures);
+        (void)fprintf(stderr, "story bench check: %d failure(s); run make story to regenerate\n",
+                      failures);
         return 1;
     }
     puts("story bench check: 8 re-run rows and the metric/policy texts match docs/narrative; all "
@@ -447,6 +477,7 @@ int main(int argc, char **argv)
     if (argc == 2) {
         return write_all(argv[1]);
     }
-    fputs("usage: story_bench <dir> | story_bench --check <dir> | story_bench --summary\n", stderr);
+    (void)fputs("usage: story_bench <dir> | story_bench --check <dir> | story_bench --summary\n",
+                stderr);
     return 2;
 }

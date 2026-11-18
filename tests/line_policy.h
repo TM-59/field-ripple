@@ -78,30 +78,31 @@ static inline void keeper_plan(Keeper *p)
  * line.h. */
 static inline void keeper_describe(char *buf, size_t cap)
 {
-    snprintf(buf, cap,
-             "A relay keeper who reads the gauges, not the code, and does not hear Kit's call (her "
-             "reading reaches it only as "
-             "a steadier speed readout). Far from the mark it reads the wobbling speed readout as "
-             "the speed the turn will "
-             "coast to once the motor spins down, and aims for the lower of its cruising speed "
-             "(%.2f-%.2f c) and the speed "
-             "it could still brake from over the distance left, less a margin of %.0f-%.0f %%; it "
-             "runs the motor towards the "
-             "mark below that aim, against the turn above it, and coasts within %.2f-%.2f c of it. "
-             "A new command takes after "
-             "%d-%d frames (%.1f-%.1f t). Within %.1f units of the mark it reads the position "
-             "marker instead (it does not "
-             "wobble) and creeps in at %.2f-%.2f c; within %.1f it lets the turn stop and waits "
-             "for the catch arm. On a held "
-             "bell it cuts the motor and waits. Its hand is re-drawn from the night's own stirred "
-             "seed for every leg and "
-             "after every failure. Choices follow the path field.",
-             KEEPER_CRUISE_LO, KEEPER_CRUISE_LO + KEEPER_CRUISE_SPAN, 100.0 * KEEPER_MARGIN_LO,
-             100.0 * (KEEPER_MARGIN_LO + KEEPER_MARGIN_SPAN), KEEPER_BAND_LO,
-             KEEPER_BAND_LO + KEEPER_BAND_SPAN, KEEPER_HESITATE_LO + 1,
-             KEEPER_HESITATE_LO + KEEPER_HESITATE_STEPS, (KEEPER_HESITATE_LO + 1) * LINE_FRAME,
-             (KEEPER_HESITATE_LO + KEEPER_HESITATE_STEPS) * LINE_FRAME, KEEPER_NEAR,
-             KEEPER_CRAWL_LO, KEEPER_CRAWL_LO + KEEPER_CRAWL_SPAN, KEEPER_STOP);
+    (void)snprintf(
+        buf, cap,
+        "A relay keeper who reads the gauges, not the code, and does not hear Kit's call (her "
+        "reading reaches it only as "
+        "a steadier speed readout). Far from the mark it reads the wobbling speed readout as "
+        "the speed the turn will "
+        "coast to once the motor spins down, and aims for the lower of its cruising speed "
+        "(%.2f-%.2f c) and the speed "
+        "it could still brake from over the distance left, less a margin of %.0f-%.0f %%; it "
+        "runs the motor towards the "
+        "mark below that aim, against the turn above it, and coasts within %.2f-%.2f c of it. "
+        "A new command takes after "
+        "%d-%d frames (%.1f-%.1f t). Within %.1f units of the mark it reads the position "
+        "marker instead (it does not "
+        "wobble) and creeps in at %.2f-%.2f c; within %.1f it lets the turn stop and waits "
+        "for the catch arm. On a held "
+        "bell it cuts the motor and waits. Its hand is re-drawn from the night's own stirred "
+        "seed for every leg and "
+        "after every failure. Choices follow the path field.",
+        KEEPER_CRUISE_LO, KEEPER_CRUISE_LO + KEEPER_CRUISE_SPAN, 100.0 * KEEPER_MARGIN_LO,
+        100.0 * (KEEPER_MARGIN_LO + KEEPER_MARGIN_SPAN), KEEPER_BAND_LO,
+        KEEPER_BAND_LO + KEEPER_BAND_SPAN, KEEPER_HESITATE_LO + 1,
+        KEEPER_HESITATE_LO + KEEPER_HESITATE_STEPS, (KEEPER_HESITATE_LO + 1) * LINE_FRAME,
+        (KEEPER_HESITATE_LO + KEEPER_HESITATE_STEPS) * LINE_FRAME, KEEPER_NEAR, KEEPER_CRAWL_LO,
+        KEEPER_CRAWL_LO + KEEPER_CRAWL_SPAN, KEEPER_STOP);
 }
 
 static inline void keeper_init(Keeper *p, uint64_t key)
