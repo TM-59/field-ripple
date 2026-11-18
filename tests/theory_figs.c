@@ -789,8 +789,10 @@ static void fig_collision_grid(void)
         xs[i] = (float)log10(dxs[i]);
         ya[i] = (float)log10(es[i]);
         yb[i] = (float)log10(ew[i]);
-        yc[i] =
-            (float)(log10(ew[2]) + 2.0 * (xs[i] - log10(0.1))); /* slope 2 through the game grid */
+    }
+    for (int i = 0; i < 4; i++) {
+        /* slope 2 through the game grid (dx = 0.1), drawn once every error is measured */
+        yc[i] = (float)(log10(ew[2]) + 2.0 * (xs[i] - log10(0.1)));
     }
     value("shift-order", "error of the v = 0.7 shift on dx = 0.1 over dx = 0.05 (second order: 4)",
           es[2] / es[3], 4.0);
