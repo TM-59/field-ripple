@@ -79,10 +79,10 @@ static void fig_kink(void)
     int n = 1601;
     for (int k = 0; k < 3; k++) {
         Field f;
-        if (field_init(&f, n, -8.0, 0.01, 0.005, 0)) {
+        if (field_init(&f, (Grid){n, -8.0, 0.01, 0.005, 0})) {
             exit(1);
         }
-        field_set_kink(&f, 0.0, speeds[k], 1);
+        field_set_kink(&f, (Kink){0.0, speeds[k], 1});
         for (int j = 0; j < n; j++) {
             xs[j] = (float)field_x(&f, j);
             prof[k][j] = (float)(f.cur[j] / PI);
@@ -115,10 +115,10 @@ static void fig_contraction(void)
     for (int i = 0; i < n; i++) {
         double v = 0.05 * i, gamma = 1.0 / sqrt(1.0 - v * v);
         Field f;
-        if (field_init(&f, 2000, -100.0, 0.1, 0.05, 0)) {
+        if (field_init(&f, (Grid){2000, -100.0, 0.1, 0.05, 0})) {
             exit(1);
         }
-        field_set_kink(&f, -20.0, v, 1);
+        field_set_kink(&f, (Kink){-20.0, v, 1});
         run(&f, 20.0);
         xs[i] = (float)v;
         ya[i] = (float)(2.0 / field_max_gradient(&f)); /* width 2 / max phi_x = 1 / gamma */
@@ -149,10 +149,11 @@ static void fig_contraction(void)
 
 /* Angular frequency of a small standing wave amp cos(k x), from the time of its first zero at x =
  * 0. */
-static double measured_omega(double k, int n, double dx, double dt)
+static double measured_omega(double k, Grid grid)
 {
+    double dt = grid.dt;
     Field f;
-    if (field_init(&f, n, 0.0, dx, dt, 1)) {
+    if (field_init(&f, grid)) {
         exit(1);
     }
     field_set_wave(&f, 1e-4, k);
@@ -180,7 +181,7 @@ static void fig_dispersion(void)
         double grid =
             4.0 / (dx * dx) * pow(sin(0.5 * k * dx), 2.0) + 1.0; /* linearised right-hand side */
         double disc = 2.0 / dt * asin(fmin(1.0, 0.5 * dt * sqrt(grid)));
-        double w = measured_omega(k, n, dx, dt);
+        double w = measured_omega(k, (Grid){n, 0.0, dx, dt, 1});
         xs[m - 1] = (float)k;
         ya[m - 1] = (float)sqrt(1.0 + k * k);
         yb[m - 1] = (float)disc;
@@ -209,10 +210,10 @@ static void fig_energy_error(void)
     int samples = 201;
     for (int k = 0; k < 2; k++) {
         Field f;
-        if (field_init(&f, (int)(200.0 / dxs[k]), -100.0, dxs[k], 0.5 * dxs[k], 0)) {
+        if (field_init(&f, (Grid){(int)(200.0 / dxs[k]), -100.0, dxs[k], 0.5 * dxs[k], 0})) {
             exit(1);
         }
-        field_set_kink(&f, -20.0, 0.5, 1);
+        field_set_kink(&f, (Kink){-20.0, 0.5, 1});
         double exact = 8.0 / sqrt(1.0 - 0.25);
         for (int i = 0; i < samples; i++) {
             if (i) {
@@ -247,7 +248,7 @@ static void fig_cfl(void)
     for (int i = 0; i < count; i++) {
         double ratio = 0.5 + 0.01 * i;
         Field f;
-        if (field_init(&f, n, 0.0, dx, ratio * dx, 1)) {
+        if (field_init(&f, (Grid){n, 0.0, dx, ratio * dx, 1})) {
             exit(1);
         }
         for (int j = 0; j < n; j++) {
@@ -288,11 +289,11 @@ static void fig_push(void)
     double eps = 0.01, force = 2.0 * PI * eps;
     int count = 101;
     Field f;
-    if (field_init(&f, 3000, -200.0, 0.1, 0.05, 0)) {
+    if (field_init(&f, (Grid){3000, -200.0, 0.1, 0.05, 0})) {
         exit(1);
     }
     f.eps = eps;
-    field_set_kink(&f, 60.0, 0.0, 1); /* a positive bias pushes a rising kink towards -x */
+    field_set_kink(&f, (Kink){60.0, 0.0, 1}); /* a positive bias pushes a rising kink towards -x */
     double before = field_kink_position(&f);
     xs[0] = ya[0] = yb[0] = yc[0] = 0.0f;
     for (int i = 1; i < count; i++) {
@@ -334,7 +335,7 @@ static void fig_boundary(void)
     float *out[2] = {ya, yb};
     for (int k = 0; k < 2; k++) {
         Field f;
-        if (field_init(&f, n, 0.0, 0.1, 0.05, k)) {
+        if (field_init(&f, (Grid){n, 0.0, 0.1, 0.05, k})) {
             exit(1);
         }
         for (int j = 0; j < n; j++) {
@@ -360,10 +361,10 @@ static void fig_position(void)
     int n = 161;
     Field coarse;
     double centre = 0.137;
-    if (field_init(&coarse, 41, -10.0, 0.5, 0.05, 0)) {
+    if (field_init(&coarse, (Grid){41, -10.0, 0.5, 0.05, 0})) {
         exit(1);
     }
-    field_set_kink(&coarse, centre, 0.0, 1);
+    field_set_kink(&coarse, (Kink){centre, 0.0, 1});
     double found = field_kink_position(&coarse);
     for (int i = 0; i < n; i++) {
         double x = -2.0 + 4.0 * i / (n - 1), g = (x + 10.0) / 0.5;
@@ -379,10 +380,10 @@ static void fig_position(void)
           centre);
     field_free(&coarse);
     Field fine;
-    if (field_init(&fine, 2000, -100.0, 0.1, 0.05, 0)) {
+    if (field_init(&fine, (Grid){2000, -100.0, 0.1, 0.05, 0})) {
         exit(1);
     }
-    field_set_kink(&fine, centre, 0.0, 1);
+    field_set_kink(&fine, (Kink){centre, 0.0, 1});
     value("position-dx0.1",
           "interpolated kink position on the game's grid dx = 0.1 (true centre 0.137)",
           field_kink_position(&fine), centre);
@@ -435,7 +436,7 @@ static void fig_motor(void)
     double start = line_value(&l, LV_CHARGE), dial_at_ramp = 0.0;
     for (int i = 0; i < n; i++) {
         if (i) {
-            line_tick(&l, 1, i <= 60 ? LC_DOWN : LC_COAST);
+            line_tick(&l, (LineInput){1, i <= 60 ? LC_DOWN : LC_COAST});
         }
         xs[i] = (float)(LINE_FRAME * i);
         ya[i] = (float)line_value(&l, LV_MOTOR);
@@ -476,11 +477,11 @@ static void fig_wobble(void)
         xs[i] = (float)(0.05 * i);
         ya[i] = (float)line_wobble(&alone);
         yb[i] = (float)line_wobble(&called);
-        if (fabs(ya[i]) > peak[0]) {
-            peak[0] = fabs(ya[i]);
+        if (fabsf(ya[i]) > peak[0]) {
+            peak[0] = fabsf(ya[i]);
         }
-        if (fabs(yb[i]) > peak[1]) {
-            peak[1] = fabs(yb[i]);
+        if (fabsf(yb[i]) > peak[1]) {
+            peak[1] = fabsf(yb[i]);
         }
     }
     value("wobble-call",
@@ -528,7 +529,7 @@ static void fig_pair(void)
     double v = 0.5, t0 = -40.0, worst = 0.0;
     static float d[2][MAXN];
     Field f;
-    if (field_init(&f, 1201, -60.0, 0.1, 0.05, 0)) {
+    if (field_init(&f, (Grid){1201, -60.0, 0.1, 0.05, 0})) {
         exit(1);
     }
     field_set_pair(&f, v, t0);
@@ -571,7 +572,7 @@ static void fig_shift(void)
            t0 = -(20.0 - lag) / v;
     static float free_in[MAXN];
     Field f;
-    if (field_init(&f, 1201, -60.0, 0.1, 0.05, 0)) {
+    if (field_init(&f, (Grid){1201, -60.0, 0.1, 0.05, 0})) {
         exit(1);
     }
     field_set_pair(&f, v, t0);
@@ -602,22 +603,23 @@ static void fig_shift(void)
         double u = 0.05 * (i + 1);
         xs[i] = (float)u;
         ya[i] = (float)sg_pair_shift(u);
-        yb[i] = (float)pair_measure_shift(u, 0.1, NULL, NULL);
+        yb[i] = (float)pair_measure_shift((PairTrial){u, 0.1}, NULL);
     }
-    double in, out;
+    Speeds speeds;
     value("shift-v0.1",
           "forward shift after the collision at v = 0.1 (theory 2 sqrt(1 - v^2) ln(1/v))",
-          pair_measure_shift(0.1, 0.1, NULL, NULL), sg_pair_shift(0.1));
+          pair_measure_shift((PairTrial){0.1, 0.1}, NULL), sg_pair_shift(0.1));
     value("shift-v0.5",
           "forward shift after the collision at v = 0.5 (theory 2 sqrt(1 - v^2) ln(1/v))",
-          pair_measure_shift(0.5, 0.1, &in, &out), sg_pair_shift(0.5));
+          pair_measure_shift((PairTrial){0.5, 0.1}, &speeds), sg_pair_shift(0.5));
     value("speed-out-v0.5",
-          "fitted speed after the collision against before it, v = 0.5 (theory: equal)", out, in);
+          "fitted speed after the collision against before it, v = 0.5 (theory: equal)", speeds.out,
+          speeds.in);
     value("shift-v0.9", "forward shift after the collision at v = 0.9, dx = 0.1",
-          pair_measure_shift(0.9, 0.1, NULL, NULL), sg_pair_shift(0.9));
+          pair_measure_shift((PairTrial){0.9, 0.1}, NULL), sg_pair_shift(0.9));
     value("shift-v0.95",
           "forward shift at v = 0.95, dx = 0.1: the width 1/gamma = 0.31 is three grid cells",
-          pair_measure_shift(0.95, 0.1, NULL, NULL), sg_pair_shift(0.95));
+          pair_measure_shift((PairTrial){0.95, 0.1}, NULL), sg_pair_shift(0.95));
     Series s[] = {{"2 sqrt(1-v^2) ln(1/v)", ya, "#d62728"}, {"measured", yb, "#1f77b4"}};
     plot("pair-shift.svg", "Forward shift of each soliton after the collision", "speed v (c = 1)",
          "shift", m, s, 2);
@@ -628,7 +630,7 @@ static void fig_shift(void)
 static void fig_pair_conserved(void)
 {
     Field f;
-    if (field_init(&f, 2401, -120.0, 0.1, 0.05, 0)) {
+    if (field_init(&f, (Grid){2401, -120.0, 0.1, 0.05, 0})) {
         exit(1);
     }
     field_set_superposed_pair(&f, 20.0, 0.5);
@@ -664,10 +666,10 @@ static void fig_breather(void)
 {
     double w = 0.5;
     Field f;
-    if (field_init(&f, 1201, -60.0, 0.1, 0.05, 0)) {
+    if (field_init(&f, (Grid){1201, -60.0, 0.1, 0.05, 0})) {
         exit(1);
     }
-    field_set_breather(&f, w, 0.0, 0.0);
+    field_set_breather(&f, (Breather){w, 0.0, 0.0});
     int n = 601;
     for (int i = 0; i < n; i++) {
         if (i) {
@@ -682,28 +684,30 @@ static void fig_breather(void)
     plot("breather-centre.svg", "Breather at omega = 0.5: phi at its centre", "time t", "phi(0, t)",
          n, s, 2);
 
-    double drift, swing, fine;
+    BreatherStats coarse, fine;
     value("breather-omega-0.3", "measured angular frequency over 20 periods, omega = 0.3",
-          breather_measure_frequency(0.3, 0.1, 20, NULL, NULL, NULL), 0.3);
+          breather_measure_frequency((BreatherTrial){0.3, 0.1, 20}, NULL), 0.3);
     value("breather-omega-0.5", "measured angular frequency over 20 periods, omega = 0.5",
-          breather_measure_frequency(0.5, 0.1, 20, &drift, &swing, NULL), 0.5);
-    breather_measure_frequency(0.5, 0.05, 20, NULL, &fine, NULL);
+          breather_measure_frequency((BreatherTrial){0.5, 0.1, 20}, &coarse), 0.5);
+    (void)breather_measure_frequency((BreatherTrial){0.5, 0.05, 20}, &fine);
+    double drift = coarse.energy_drift, swing = coarse.swing;
     value("breather-omega-0.8", "measured angular frequency over 20 periods, omega = 0.8",
-          breather_measure_frequency(0.8, 0.1, 20, NULL, NULL, NULL), 0.8);
+          breather_measure_frequency((BreatherTrial){0.8, 0.1, 20}, NULL), 0.8);
     value("breather-drift-0.5",
           "largest change of E between breaths (field at rest), omega = 0.5 (ideal 0)", drift, 0.0);
     value("breather-swing-ratio",
           "within-breath swing of the energy reading, dx = 0.1 over dx = 0.05 (second order: 4)",
-          swing / fine, 4.0);
+          swing / fine.swing, 4.0);
 
     int m = 19;
     for (int i = 0; i < m; i++) {
         double u = 0.05 * (i + 1);
         Field g;
-        if (field_init(&g, 1201, -60.0, 0.1, 0.05, 0)) {
+        if (field_init(&g, (Grid){1201, -60.0, 0.1, 0.05, 0})) {
             exit(1);
         }
-        field_set_breather(&g, u, 0.5 * PI / u, 0.0); /* a peak: the field stands still */
+        field_set_breather(&g,
+                           (Breather){u, 0.5 * PI / u, 0.0}); /* a peak: the field stands still */
         xs[i] = (float)u;
         ya[i] = (float)sg_breather_energy(u);
         yb[i] = (float)field_energy(&g);
@@ -725,10 +729,11 @@ static void fig_bound(void)
 {
     double w = 0.3, v = 0.3;
     Field b, p;
-    if (field_init(&b, 1201, -60.0, 0.1, 0.05, 0) || field_init(&p, 1201, -60.0, 0.1, 0.05, 0)) {
+    if (field_init(&b, (Grid){1201, -60.0, 0.1, 0.05, 0}) ||
+        field_init(&p, (Grid){1201, -60.0, 0.1, 0.05, 0})) {
         exit(1);
     }
-    field_set_breather(&b, w, 0.0, 0.0);
+    field_set_breather(&b, (Breather){w, 0.0, 0.0});
     field_set_pair(&p, v, 0.0);
     int n = 301;
     double wide = 0.0;
@@ -778,8 +783,9 @@ static void fig_collision_grid(void)
 {
     double dxs[4] = {0.4, 0.2, 0.1, 0.05}, es[4], ew[4];
     for (int i = 0; i < 4; i++) {
-        es[i] = fabs(pair_measure_shift(0.7, dxs[i], NULL, NULL) / sg_pair_shift(0.7) - 1.0);
-        ew[i] = fabs(breather_measure_frequency(0.3, dxs[i], 10, NULL, NULL, NULL) / 0.3 - 1.0);
+        es[i] = fabs(pair_measure_shift((PairTrial){0.7, dxs[i]}, NULL) / sg_pair_shift(0.7) - 1.0);
+        ew[i] =
+            fabs(breather_measure_frequency((BreatherTrial){0.3, dxs[i], 10}, NULL) / 0.3 - 1.0);
         xs[i] = (float)log10(dxs[i]);
         ya[i] = (float)log10(es[i]);
         yb[i] = (float)log10(ew[i]);
@@ -792,13 +798,13 @@ static void fig_collision_grid(void)
           "error of the omega = 0.3 frequency on dx = 0.1 over dx = 0.05 (second order: 4)",
           ew[2] / ew[3], 4.0);
     value("omega-0.2-dx0.05", "measured frequency of the omega = 0.2 breather on dx = 0.05",
-          breather_measure_frequency(0.2, 0.05, 20, NULL, NULL, NULL), 0.2);
+          breather_measure_frequency((BreatherTrial){0.2, 0.05, 20}, NULL), 0.2);
     /* A slow kink on a coarse grid: no Peierls-Nabarro pinning is visible at this resolution. */
     Field f;
-    if (field_init(&f, 1000, -200.0, 0.4, 0.2, 0)) {
+    if (field_init(&f, (Grid){1000, -200.0, 0.4, 0.2, 0})) {
         exit(1);
     }
-    field_set_kink(&f, -50.0, 0.05, 1);
+    field_set_kink(&f, (Kink){-50.0, 0.05, 1});
     double x0 = field_kink_position(&f);
     run(&f, 400.0);
     value("slow-kink-dx0.4", "mean speed of a v = 0.05 kink over t = 400 on a coarse grid dx = 0.4",

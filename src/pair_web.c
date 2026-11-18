@@ -86,7 +86,7 @@ int pw_reset(int m, double p)
         field_free(&field);
     }
     ready = 0;
-    if (field_init(&field, 1201, -60.0, 0.1, 0.05, 0)) {
+    if (field_init(&field, (Grid){1201, -60.0, 0.1, 0.05, 0})) {
         return 1;
     }
     ready = 1;
@@ -101,7 +101,7 @@ int pw_reset(int m, double p)
     } else {
         t_start = 0.0;
         t_end = 4.0 * 2.0 * PI / p;
-        field_set_breather(&field, p, 0.0, 0.0);
+        field_set_breather(&field, (Breather){p, 0.0, 0.0});
     }
     steps_total = (int)lround((t_end - t_start) / field.dt);
     rows = done = steps_done = crossings = nb = na = 0;
@@ -189,8 +189,7 @@ double pw_value(int k)
     case PW_RIGHT:
         return fronts >= 2 ? xs[1] : NAN;
     case PW_SHIFT:
-        return mode == 0 && done ? pair_shift_from_tracks(tb, xb, nb, ta, xa, na, 0.0, NULL, NULL)
-                                 : NAN;
+        return mode == 0 && done ? pair_shift_from_tracks(tb, xb, nb, ta, xa, na, 0.0, NULL) : NAN;
     case PW_SHIFT_THEORY:
         return mode == 0 ? sg_pair_shift(param) : NAN;
     case PW_OMEGA:
@@ -208,18 +207,18 @@ double pw_value(int k)
     case PW_PARAM:
         return param;
     case PW_SPEED_IN: {
-        double u = NAN;
+        Speeds u = {NAN, NAN};
         if (mode == 0 && done) {
-            pair_shift_from_tracks(tb, xb, nb, ta, xa, na, 0.0, &u, NULL);
+            (void)pair_shift_from_tracks(tb, xb, nb, ta, xa, na, 0.0, &u);
         }
-        return u;
+        return u.in;
     }
     case PW_SPEED_OUT: {
-        double u = NAN;
+        Speeds u = {NAN, NAN};
         if (mode == 0 && done) {
-            pair_shift_from_tracks(tb, xb, nb, ta, xa, na, 0.0, NULL, &u);
+            (void)pair_shift_from_tracks(tb, xb, nb, ta, xa, na, 0.0, &u);
         }
-        return u;
+        return u.out;
     }
     case PW_SEPARATION:
         return widest;
@@ -257,7 +256,7 @@ const double *pw_samples(void)
             j = field.n - 3;
         }
         double a = fmax(0.0, fmin(1.0, u - j));
-        samples[3 * i] = field.cur[j] + a * (field.cur[j + 1] - field.cur[j]);
+        samples[3 * (size_t)i] = field.cur[j] + a * (field.cur[j + 1] - field.cur[j]);
         samples[3 * i + 1] = exact(x, t);
         samples[3 * i + 2] = density(j) + a * (density(j + 1) - density(j));
     }

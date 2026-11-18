@@ -38,13 +38,13 @@ static int headless(const char *dir)
     enum { M = 241 };
     static float s[M], prof[3][M];
     for (int i = 0; i < M; i++) {
-        s[i] = -6.0f + 0.05f * i;
+        s[i] = -6.0f + 0.05f * (float)i;
     }
     for (int k = 0; k < 3; k++) {
-        if (field_init(&f, GRID, -100.0, DX, DT, 0)) {
+        if (field_init(&f, (Grid){GRID, -100.0, DX, DT, 0})) {
             return 1;
         }
-        field_set_kink(&f, -20.0, speeds[k], 1);
+        field_set_kink(&f, (Kink){-20.0, speeds[k], 1});
         for (int n = 0; n < 400; n++) {
             field_step(&f);
         }
@@ -68,10 +68,10 @@ static int headless(const char *dir)
     enum { N = 400 };
     static float t[N], de[N], vs[N], vt[N];
     double eps = 0.01, force = 2.0 * PI * eps, e0;
-    if (field_init(&f, GRID, -100.0, DX, DT, 0)) {
+    if (field_init(&f, (Grid){GRID, -100.0, DX, DT, 0})) {
         return 1;
     }
-    field_set_kink(&f, -20.0, 0.8, 1);
+    field_set_kink(&f, (Kink){-20.0, 0.8, 1});
     e0 = field_energy(&f);
     for (int i = 0; i < N; i++) {
         t[i] = (float)(i * 0.25);
@@ -88,11 +88,11 @@ static int headless(const char *dir)
         return 1;
     }
 
-    if (field_init(&f, GRID, -100.0, DX, DT, 0)) {
+    if (field_init(&f, (Grid){GRID, -100.0, DX, DT, 0})) {
         return 1;
     }
     f.eps = eps;
-    field_set_kink(&f, 0.0, 0.0, 1);
+    field_set_kink(&f, (Kink){0.0, 0.0, 1});
     (void)snprintf(path, sizeof path, "%s/run.csv", dir);
     FILE *csv = fopen(path, "w");
     if (!csv) {
@@ -129,15 +129,15 @@ static int headless(const char *dir)
 static int snapshot(void)
 {
     Field f;
-    if (field_init(&f, GRID, -100.0, DX, DT, 0)) {
+    if (field_init(&f, (Grid){GRID, -100.0, DX, DT, 0})) {
         return 1;
     }
-    field_set_kink(&f, 0.0, 0.8, 1);
+    field_set_kink(&f, (Kink){0.0, 0.8, 1});
     for (int n = 0; n < 200; n++) {
         field_step(&f);
     }
     static char buf[RENDER_COLS * RENDER_ROWS * 4];
-    int ok = render_frame(&f, field_kink_position(&f), TARGET, buf, sizeof buf) != 0;
+    int ok = render_frame(&f, (RenderView){field_kink_position(&f), TARGET}, buf, sizeof buf) != 0;
     if (ok) {
         (void)fputs(buf, stdout);
     }
@@ -151,10 +151,10 @@ static int gif_colour(char c) { return c == '|' ? 2 : 3; }
 static int gif_demo(const char *path)
 {
     Field f;
-    if (field_init(&f, GRID, -100.0, DX, DT, 0)) {
+    if (field_init(&f, (Grid){GRID, -100.0, DX, DT, 0})) {
         return 1;
     }
-    field_set_kink(&f, 0.0, 0.0, 1);
+    field_set_kink(&f, (Kink){0.0, 0.0, 1});
     unsigned char pal[GIF_COLOURS][3] = {
         {8, 10, 24}, {235, 235, 235}, {255, 205, 60}, {90, 210, 255}};
     const int scale = 3, cw = RENDER_COLS * 6 * scale, ch = RENDER_ROWS * 9 * scale;
@@ -176,7 +176,7 @@ static int gif_demo(const char *path)
             break;
         }
         f.eps = braking ? 0.05 : -0.05;
-        render_frame(&f, x, TARGET, buf, sizeof buf);
+        render_frame(&f, (RenderView){x, TARGET}, buf, sizeof buf);
         gif_draw_text(px, cw, ch, buf, scale, gif_colour);
         if (gif_frame(g, px, 0)) {
             return 1;
@@ -188,7 +188,7 @@ static int gif_demo(const char *path)
         x = field_kink_position(&f);
     }
     f.eps = 0.0;
-    render_frame(&f, x, TARGET, buf, sizeof buf);
+    render_frame(&f, (RenderView){x, TARGET}, buf, sizeof buf);
     gif_draw_text(px, cw, ch, buf, scale, gif_colour);
     if (gif_frame(g, px, 250)) {
         return 1;
@@ -234,14 +234,14 @@ static int collide(const char *dir)
     memset(px, 0, sizeof px);
     for (int panel = 0; panel < 2; panel++) {
         Field f;
-        if (field_init(&f, 1201, -60.0, DX, DT, 0)) {
+        if (field_init(&f, (Grid){1201, -60.0, DX, DT, 0})) {
             return 1;
         }
         double t0 = panel == 0 ? -40.0 : 0.0, span = panel == 0 ? 80.0 : 2.0 * 2.0 * PI / 0.3;
         if (panel == 0) {
             field_set_pair(&f, 0.5, t0);
         } else {
-            field_set_breather(&f, 0.3, 0.0, 0.0);
+            field_set_breather(&f, (Breather){0.3, 0.0, 0.0});
         }
         int total = (int)lround(span / DT), done = 0;
         for (int row = 0; row < PH; row++) {
@@ -262,11 +262,12 @@ static int collide(const char *dir)
     if (!g || gif_frame(g, px, 0) || gif_close(g)) {
         return 1;
     }
-    double in, out, shift = pair_measure_shift(0.5, DX, &in, &out);
+    Speeds speeds;
+    double shift = pair_measure_shift((PairTrial){0.5, DX}, &speeds);
     printf("pair v=0.5 measured shift %.5f, theory %.5f; speeds %.5f -> %.5f\n", shift,
-           sg_pair_shift(0.5), in, out);
+           sg_pair_shift(0.5), speeds.in, speeds.out);
     printf("breather omega=0.3 measured %.6f\n",
-           breather_measure_frequency(0.3, DX, 20, NULL, NULL, NULL));
+           breather_measure_frequency((BreatherTrial){0.3, DX, 20}, NULL));
     return 0;
 }
 
@@ -284,10 +285,10 @@ static int play(void)
         return 1;
     }
     Field f;
-    if (field_init(&f, GRID, -100.0, DX, DT, 0)) {
+    if (field_init(&f, (Grid){GRID, -100.0, DX, DT, 0})) {
         return 1;
     }
-    field_set_kink(&f, 0.0, 0.0, 1);
+    field_set_kink(&f, (Kink){0.0, 0.0, 1});
     tcgetattr(STDIN_FILENO, &saved);
     struct termios raw = saved;
     raw.c_lflag &= ~((tcflag_t)ICANON | (tcflag_t)ECHO);
@@ -336,7 +337,7 @@ static int play(void)
             x = 0.0;
         }
         double gamma = fabs(v) < 0.999 ? 1.0 / sqrt(1.0 - v * v) : 1.0;
-        render_frame(&f, x, TARGET, buf, sizeof buf);
+        render_frame(&f, (RenderView){x, TARGET}, buf, sizeof buf);
         printf("\033[H%s", buf);
         printf("t %6.1f  kink at %6.2f  v %+.3f  gamma %.2f  width ~ %.2f    \n", t, x, v, gamma,
                1.0 / gamma);

@@ -5,8 +5,10 @@
 #define UNITS_PER_COL 0.25
 #define PI 3.14159265358979323846
 
-size_t render_frame(const Field *f, double centre, double target, char *buf, size_t cap)
+size_t render_frame(const Field *f, RenderView view, char *buf, size_t cap)
 {
+    double centre = view.centre, target = view.target;
+    const int mid = RENDER_COLS / 2; /* the centre column */
     if (cap < (size_t)(RENDER_COLS + 1) * RENDER_ROWS + 1) {
         return 0;
     }
@@ -17,7 +19,7 @@ size_t render_frame(const Field *f, double centre, double target, char *buf, siz
         }
     }
     for (int c = 0; c < RENDER_COLS; c++) {
-        double x = centre + (c - RENDER_COLS / 2) * UNITS_PER_COL;
+        double x = centre + (c - mid) * UNITS_PER_COL;
         if (fabs(x - target) < UNITS_PER_COL / 2.0) {
             for (int i = 0; i < RENDER_ROWS; i++) {
                 g[i][c] = '|';

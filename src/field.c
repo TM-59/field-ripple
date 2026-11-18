@@ -5,8 +5,10 @@
 
 #define PI 3.14159265358979323846
 
-int field_init(Field *f, int n, double x0, double dx, double dt, int periodic)
+int field_init(Field *f, Grid grid)
 {
+    int n = grid.n, periodic = grid.periodic;
+    double x0 = grid.x0, dx = grid.dx, dt = grid.dt;
     f->n = n;
     f->x0 = x0;
     f->dx = dx;
@@ -41,19 +43,21 @@ static double at(const Field *f, const double *a, int j)
     return a[j < 0 ? 0 : j >= f->n ? f->n - 1 : j];
 }
 
-static double kink(double x, double t, double v, int sign)
+static double kink(double x, double t, const Kink *k)
 {
+    double v = k->v;
+    int sign = k->sign;
     double g = 1.0 / sqrt(1.0 - v * v);
     double p = 4.0 * atan(exp(g * (x - v * t)));
     return sign > 0 ? p : 2.0 * PI - p;
 }
 
-void field_set_kink(Field *f, double centre, double v, int sign)
+void field_set_kink(Field *f, Kink k)
 {
     for (int j = 0; j < f->n; j++) {
-        double x = field_x(f, j) - centre;
-        f->cur[j] = kink(x, 0.0, v, sign);
-        f->prev[j] = kink(x, -f->dt, v, sign);
+        double x = field_x(f, j) - k.centre;
+        f->cur[j] = kink(x, 0.0, &k);
+        f->prev[j] = kink(x, -f->dt, &k);
     }
 }
 

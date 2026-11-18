@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static const int DESIGN[LS_COUNT] = {LS_HUT,  LS_STONES, LS_BELL, LS_SPILL,
@@ -17,8 +18,9 @@ static int close_to(double a, double b) { return fabs(a - b) <= 1e-9 * fmax(1.0,
 
 /* Run with the keeper, answering scenes with the given choices, until `target` opens. Returns
  * frames run. */
-static int drive(Line *l, Keeper *p, int target, int route, int ford)
+static int drive(Line *l, Keeper *p, int target, Choices choices)
 {
+    int route = choices.route, ford = choices.ford;
     int frames = 0;
     while (l->scene != target) {
         assert(l->leg < L_LEGS && frames < RUN_GUARD_FRAMES);
@@ -29,7 +31,7 @@ static int drive(Line *l, Keeper *p, int target, int route, int ford)
             continue;
         }
         double t = l->time;
-        line_tick(l, 1, keeper_command(p, l));
+        line_tick(l, (LineInput){1, keeper_command(p, l)});
         assert(fabs(l->time - t - 0.2) <
                1e-9); /* every frame is 0.2 t through the solver: no flat waits */
         frames++;
@@ -58,8 +60,9 @@ static char *slurp(const char *path)
 }
 
 /* Two-sided sign test over the seeds: p for the larger of the two one-way counts. */
-static double sign_p(int k, int n)
+static double sign_p(int k)
 {
+    const int n = ABLATION_SEEDS;
     double tail = 0.0;
     for (int x = k; x <= n; x++) {
         double comb = 1.0;
@@ -69,6 +72,23 @@ static double sign_p(int k, int n)
         tail += comb;
     }
     return fmin(1.0, 2.0 * tail / pow(2.0, n));
+}
+
+/* The numbers of an ablation row that the checks read, in the order they are written. */
+enum RowField { ROW_SECONDS, ROW_FAILS };
+
+/* The number after `"<field>": ` at or after `at`; asserts that the name and a number are there. */
+static double number_after(const char *at, enum RowField field)
+{
+    static const char *const NAME[] = {"seconds", "fails"};
+    char head[32];
+    (void)snprintf(head, sizeof head, "\"%s\": ", NAME[field]);
+    const char *start = strstr(at, head);
+    assert(start);
+    char *end = NULL;
+    double value = strtod(start + strlen(head), &end);
+    assert(end != start + strlen(head));
+    return value;
 }
 
 /* Reads two row lists (seconds, fails, red per seed) that follow the heads `a` then `b` after
@@ -82,11 +102,9 @@ static void read_rows(const char *at, const char *a, const char *b, double v[2][
             at = strstr(at, "\"seconds\": ");
             /* The two outcomes: seconds and fails. red is a resource (the charge the beats change)
              * and is not read here. */
-            int fails;
-            double red;
-            assert(at && sscanf(at, "\"seconds\": %lf, \"fails\": %d, \"red\": %lf", &v[arm][i][0],
-                                &fails, &red) == 3);
-            v[arm][i][1] = fails;
+            assert(at);
+            v[arm][i][0] = number_after(at, ROW_SECONDS);
+            v[arm][i][1] = number_after(at, ROW_FAILS);
             at++;
         }
     }
@@ -102,7 +120,7 @@ static int measurable(double v[2][ABLATION_SEEDS][2], int m, int *side)
         diff += v[0][i][m] - v[1][i][m];
         base += v[1][i][m];
     }
-    double p = sign_p(lower0 > lower1 ? lower0 : lower1, ABLATION_SEEDS);
+    double p = sign_p(lower0 > lower1 ? lower0 : lower1);
     double rel = fabs(diff / ABLATION_SEEDS) / fmax(fabs(base / ABLATION_SEEDS), 1.0);
     *side = lower0 > lower1 ? 0 : 1;
     return p <= 0.05 && rel >= 0.05;
@@ -135,8 +153,9 @@ static void check_choice(const char *text, const char *head)
 }
 
 /* Removing a reward makes both outcomes worse; removing a punishment/loss makes both better. */
-static void check_beat(const char *text, const char *beat, int expected_side)
+static void check_beat(const char *beat, int expected_side)
 {
+    const char *text = slurp("docs/narrative/ablation.json");
     static double v[2][ABLATION_SEEDS][2];
     char head[64];
     (void)snprintf(head, sizeof head, "\"%s\": {", beat);
@@ -164,13 +183,13 @@ int main(void)
      * the end) and both endings are reached. */
     {
         const char *text = slurp("docs/narrative/play-order.json");
-        char want[256] = "\"order\": [";
+        char want[256];
+        size_t used = (size_t)snprintf(want, sizeof want, "\"order\": [");
         for (int k = 0; k < LS_COUNT; k++) {
-            strcat(want, k ? ", \"" : "\"");
-            strcat(want, SCENE_ID[DESIGN[k]]);
-            strcat(want, "\"");
+            used += (size_t)snprintf(want + used, sizeof want - used, "%s\"%s\"", k ? ", " : "",
+                                     SCENE_ID[DESIGN[k]]);
         }
-        strcat(want, "], \"won\": true");
+        (void)snprintf(want + used, sizeof want - used, "], \"won\": true");
         int seeds = 0, orders = 0;
         for (const char *c = text; (c = strstr(c, "\"seed\": ")); c++) {
             seeds++;
@@ -189,7 +208,7 @@ int main(void)
         printf("[order] %d seeds: hut .. dawn in the designed order; both endings reached\n",
                seeds);
         RunResult r;
-        run_line(play_key(3), LE_ALL, 1, 0, &r);
+        run_line(&(RunPlan){play_key(3), LE_ALL, {1, 0}}, &r);
         assert(r.completed && r.order_len == LS_COUNT && r.ending == 0 && r.quiet[LS_SPILL] &&
                r.quiet[LS_FORD] && r.quiet[LS_CUT]);
         for (int k = 0; k < LS_COUNT; k++) {
@@ -208,8 +227,8 @@ int main(void)
         assert(line_answer(&a, 0) == 0 && line_answer(&b, 0) == 0);
         assert(close_to(a.charge, 0.45) && close_to(b.charge, 0.10) && a.count == 1 &&
                b.count == 1);
-        line_tick(&a, 3, LC_COAST);
-        line_tick(&b, 3, LC_COAST);
+        line_tick(&a, (LineInput){3, LC_COAST});
+        line_tick(&b, (LineInput){3, LC_COAST});
         assert(fabs(line_wobble(&b)) > 1e-3 && close_to(line_wobble(&a) / line_wobble(&b), 0.10));
         assert(a.target_x == 18.0 && a.from_x == 0.0);
         line_free(&a);
@@ -226,9 +245,9 @@ int main(void)
         start(&a, &p, LE_ALL);
         start(&b, &q, LE_ALL);
         start(&c, &s, LE_ALL & ~LE_ROUTE);
-        drive(&a, &p, LS_STONES, 0, 1);
-        drive(&b, &q, LS_STONES, 1, 1);
-        drive(&c, &s, LS_STONES, 1, 1);
+        drive(&a, &p, LS_STONES, (Choices){0, 1});
+        drive(&b, &q, LS_STONES, (Choices){1, 1});
+        drive(&c, &s, LS_STONES, (Choices){1, 1});
         assert(line_options(LS_STONES) == 2 && !line_heavy(LS_STONES));
         assert(line_answer(&a, 0) == 0 && line_answer(&b, 1) == 0 && line_answer(&c, 1) == 0);
         assert(a.route == 0 && b.route == 1);
@@ -242,12 +261,12 @@ int main(void)
         for (int k = 0; k < 3; k++) {
             Line *l = all[k];
             l->field.eps = 0.0;
-            field_set_kink(&l->field, l->target_x, 0.0, 1);
+            field_set_kink(&l->field, (Kink){l->target_x, 0.0, 1});
             l->x = l->target_x;
             l->charge = 0.5;
             l->drift = 0.0;
             while (l->scene == LS_NONE) {
-                line_tick(l, 1, LC_COAST);
+                line_tick(l, (LineInput){1, LC_COAST});
             }
             assert(l->scene == LS_BELL);
         }
@@ -268,8 +287,8 @@ int main(void)
         Keeper p, q;
         start(&a, &p, LE_ALL);
         start(&b, &q, LE_ALL & ~LE_BOARD);
-        drive(&a, &p, LS_BELL, 1, 1);
-        drive(&b, &q, LS_BELL, 1, 1);
+        drive(&a, &p, LS_BELL, (Choices){1, 1});
+        drive(&b, &q, LS_BELL, (Choices){1, 1});
         assert(a.banner == LB_HELD && a.banner_left > 0.0 && !line_heavy(LS_BELL));
         double fa = a.charge, fb = b.charge;
         int loud = a.loud;
@@ -278,7 +297,7 @@ int main(void)
                b.scene == LS_SPILL);
         assert(line_heavy(LS_SPILL) && a.banner == LB_NONE && a.banner_left == 0.0);
         assert(line_answer(&a, 0) == 0);
-        line_tick(&a, 1, keeper_command(&p, &a));
+        line_tick(&a, (LineInput){1, keeper_command(&p, &a)});
         assert(a.loud == loud && a.banner != LB_HELD);
         line_free(&a);
         line_free(&b);
@@ -293,18 +312,18 @@ int main(void)
         Keeper p, q;
         start(&a, &p, LE_ALL);
         start(&b, &q, LE_ALL & ~LE_SPILL);
-        drive(&a, &p, LS_SPILL, 1, 1);
-        drive(&b, &q, LS_SPILL, 1, 1);
+        drive(&a, &p, LS_SPILL, (Choices){1, 1});
+        drive(&b, &q, LS_SPILL, (Choices){1, 1});
         assert(line_answer(&a, 0) == 0 && line_answer(&b, 0) == 0);
         assert(a.leg == 2 && line_leak(&a) == 0.0); /* leg 3, back to the gorge, is still dry */
-        drive(&a, &p, LS_FORD, 1, 1);
-        drive(&b, &q, LS_FORD, 1, 1);
+        drive(&a, &p, LS_FORD, (Choices){1, 1});
+        drive(&b, &q, LS_FORD, (Choices){1, 1});
         assert(line_answer(&a, 1) == 0 && line_answer(&b, 1) == 0);
         assert(a.leg == 3 && b.leg == 3);
         assert(close_to(line_leak(&a), 0.014) && line_leak(&b) == 0.0);
         a.field.eps = 0.0;
         double f = a.charge;
-        line_tick(&a, 1, LC_COAST);
+        line_tick(&a, (LineInput){1, LC_COAST});
         assert(a.field.eps == 0.0 && fabs((f - a.charge) - 0.014 * 0.2) < 1e-9);
         b.time = a.time;
         assert(fabs(line_wobble(&a)) > fabs(line_wobble(&b)));
@@ -322,7 +341,7 @@ int main(void)
         Line a;
         Keeper p;
         start(&a, &p, LE_ALL);
-        drive(&a, &p, LS_FORD, 1, ford);
+        drive(&a, &p, LS_FORD, (Choices){1, ford});
         assert(line_options(LS_FORD) == 2 && line_heavy(LS_FORD) && a.banner == LB_NONE);
         int loud = a.loud;
         double before_cell = a.charge;
@@ -331,34 +350,34 @@ int main(void)
         assert(close_to(line_leak(&a), ford ? 0.014 : 0.0));
         assert(a.ford == ford && close_to(a.target_x, ford ? 32.0 : 49.0));
         assert(close_to(line_hold_need(&a), ford ? 0.0 : 10.0));
-        line_tick(&a, 1, keeper_command(&p, &a));
+        line_tick(&a, (LineInput){1, keeper_command(&p, &a)});
         assert(a.loud == loud && a.banner != LB_HELD);
         if (ford == 0) {
             /* A fast turn at the bell: the arm is struck. */
             a.field.eps = 0.0;
-            field_set_kink(&a.field, 48.4, 0.3, 1);
+            field_set_kink(&a.field, (Kink){48.4, 0.3, 1});
             a.x = 48.4;
             a.charge = 0.2;
             int fails = a.fails;
             for (int k = 0; k < 5 && !a.knocked; k++) {
-                line_tick(&a, 1, LC_COAST);
+                line_tick(&a, (LineInput){1, LC_COAST});
             }
             assert(a.knocked && a.fails == fails + 1 && a.fails_leg[3] == 1 && a.knocks == 1 &&
                    a.fails == a.lost + a.dry + a.knocks && a.banner == LB_KNOCK && a.drift > 0.0);
             /* A turn at rest on the bell: it rings without another cell credit, and 10 t later the
              * leg ends. */
-            field_set_kink(&a.field, 49.0, 0.0, 1);
+            field_set_kink(&a.field, (Kink){49.0, 0.0, 1});
             a.x = 49.0;
             a.drift = 0.0;
             double f = a.charge;
             while (a.held == 0.0) {
                 f = a.charge;
-                line_tick(&a, 1, LC_COAST);
+                line_tick(&a, (LineInput){1, LC_COAST});
             }
             assert(close_to(a.charge, f) && line_leak(&a) == 0.0);
             double t = a.time;
             while (a.scene == LS_NONE) {
-                line_tick(&a, 1, LC_COAST);
+                line_tick(&a, (LineInput){1, LC_COAST});
             }
             assert(a.scene == LS_CUT && a.time - t >= 10.0 - 0.2 - 1e-9);
             puts("[quiet] ford: shown with no mark-held banner");
@@ -377,13 +396,13 @@ int main(void)
         Keeper p, q;
         start(&a, &p, LE_ALL);
         start(&b, &q, LE_ALL & ~LE_CUT);
-        drive(&a, &p, LS_CUT, 1, 1);
-        drive(&b, &q, LS_CUT, 1, 1);
+        drive(&a, &p, LS_CUT, (Choices){1, 1});
+        drive(&b, &q, LS_CUT, (Choices){1, 1});
         assert(line_heavy(LS_CUT) && a.banner == LB_NONE && b.banner == LB_NONE);
         int loud = a.loud;
         assert(line_answer(&a, 0) == 0 && line_answer(&b, 0) == 0);
         assert(a.count == 0 && b.count == 1 && a.leg == 4);
-        line_tick(&a, 1, LC_COAST);
+        line_tick(&a, (LineInput){1, LC_COAST});
         assert(a.loud == loud && a.banner != LB_HELD);
         puts("[quiet] cut: shown with no mark-held banner");
         assert(close_to(line_arm_limit(&a), 0.04) && close_to(line_arm_limit(&b), 0.30));
@@ -392,15 +411,15 @@ int main(void)
         a.field.eps = -0.052;
         b.field.eps = -0.08;
         double from = a.from_x;
-        line_tick(&a, 1, LC_DOWN);
-        line_tick(&b, 1, LC_DOWN);
+        line_tick(&a, (LineInput){1, LC_DOWN});
+        line_tick(&b, (LineInput){1, LC_DOWN});
         assert(a.fails_leg[4] == 1 && a.lost == 1 && a.fails == a.lost + a.dry + a.knocks &&
                close_to(a.x, from) && close_to(a.charge, 0.30) && a.drift > 7.9 &&
                a.banner == LB_LOST);
         assert(b.fails_leg[4] == 1 && b.dry == 1 && b.fails == b.lost + b.dry + b.knocks &&
                b.drift > 7.9 && b.charge == 0.0 && b.banner == LB_DRY);
         while (b.drift > 0.0) {
-            line_tick(&b, 1, LC_COAST);
+            line_tick(&b, (LineInput){1, LC_COAST});
         }
         assert(b.charge > 0.14 &&
                b.charge <= 0.15); /* the motor is still spinning down as the crank charge goes in */
@@ -417,10 +436,10 @@ int main(void)
         const char *text = slurp("docs/narrative/ablation.json");
         check_choice(text, "\"stones\": {\"paths\"");
         check_choice(text, "\"ford\": {\"paths\"");
-        check_beat(text, "hut", 0);
-        check_beat(text, "bell", 0);
-        check_beat(text, "spill", 1);
-        check_beat(text, "cut", 1);
+        check_beat("hut", 0);
+        check_beat("bell", 0);
+        check_beat("spill", 1);
+        check_beat("cut", 1);
     }
 
     /* [text] the constants the bench prints into docs/narrative are the ones the line runs on: one
@@ -432,12 +451,12 @@ int main(void)
         start(&a, &p, LE_ALL);
         assert(line_answer(&a, 0) == 0);
         double t0 = a.time;
-        line_tick(&a, 1, LC_COAST);
+        line_tick(&a, (LineInput){1, LC_COAST});
         assert(close_to(a.time - t0, LINE_FRAME));
         assert(line_value(&a, LV_RED_LINE) == LINE_RED_LINE);
         a.leg_time = LINE_LEG_LIMIT - 0.5 * LINE_FRAME;
         int lost = a.lost;
-        line_tick(&a, 1, LC_COAST);
+        line_tick(&a, (LineInput){1, LC_COAST});
         assert(a.lost == lost + 1 && a.banner == LB_LOST);
         line_free(&a);
         puts("[text] frame, red line and leg limit are the constants the bench descriptions print");
@@ -449,10 +468,10 @@ int main(void)
         Line a;
         Keeper p;
         start(&a, &p, LE_ALL);
-        drive(&a, &p, LS_STONES, 0, 0);
+        drive(&a, &p, LS_STONES, (Choices){0, 0});
         assert(a.banner == LB_HELD && a.loud == 1);
         assert(line_answer(&a, 2) == 1 && line_answer(&a, -1) == 1);
-        line_tick(&a, -1, LC_DOWN);
+        line_tick(&a, (LineInput){-1, LC_DOWN});
         assert(a.scene == LS_STONES);
         line_free(&a);
     }

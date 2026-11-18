@@ -11,9 +11,9 @@
 
 static inline uint64_t mix64(uint64_t z)
 {
-    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
-    z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
-    return z ^ (z >> 31);
+    z = (z ^ (z >> 30U)) * 0xbf58476d1ce4e5b9ULL;
+    z = (z ^ (z >> 27U)) * 0x94d049bb133111ebULL;
+    return z ^ (z >> 31U);
 }
 
 /* Seed and index are stirred separately before they are combined (no XOR or sums of raw keys). */
@@ -28,7 +28,7 @@ typedef struct {
 static inline double rng_unit(Rng *r)
 {
     r->s += 0x9e3779b97f4a7c15ULL;
-    return (double)(mix64(r->s) >> 11) / 9007199254740992.0;
+    return (double)(mix64(r->s) >> 11U) / 9007199254740992.0;
 }
 
 /* The keeper's hand. tests/story_bench.c writes the policy text in docs/narrative/tension.json from

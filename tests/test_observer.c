@@ -16,8 +16,8 @@ int main(void)
 {
     Field reference;
     CHECK(fr_reset(0.6) == 0);
-    CHECK(field_init(&reference, 2000, -100.0, 0.1, 0.05, 0) == 0);
-    field_set_kink(&reference, 0.0, 0.6, 1);
+    CHECK(field_init(&reference, (Grid){2000, -100.0, 0.1, 0.05, 0}) == 0);
+    field_set_kink(&reference, (Kink){0.0, 0.6, 1});
     for (int n = 0; n < 400; n++) {
         field_step(&reference);
     }
@@ -32,7 +32,7 @@ int main(void)
     CHECK(fr_count() == OBSERVER_SAMPLES);
     CHECK(fabs(p[OBSERVER_SAMPLES - 1] - 3.141592653589793) < 0.002);
     for (int i = 0; i < fr_count(); i++) {
-        CHECK(isfinite(p[2 * i]));
+        CHECK(isfinite(p[2 * (size_t)i]));
         CHECK(isfinite(p[2 * i + 1]) && p[2 * i + 1] >= 0);
     }
     field_free(&reference);

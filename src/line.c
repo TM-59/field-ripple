@@ -210,9 +210,9 @@ void line_free(Line *l)
 void line_init(Line *l, unsigned effects)
 {
     memset(l, 0, sizeof *l);
-    l->ready = field_init(&l->field, L_N, L_X0, L_DX, L_DT, 0) == 0;
+    l->ready = field_init(&l->field, (Grid){L_N, L_X0, L_DX, L_DT, 0}) == 0;
     if (l->ready) {
-        field_set_kink(&l->field, 0.0, 0.0, 1);
+        field_set_kink(&l->field, (Kink){0.0, 0.0, 1});
     }
     l->effects = effects;
     l->route = l->ford = -1;
@@ -249,7 +249,7 @@ static void fail(Line *l, int banner)
 static void relaunch(Line *l)
 {
     l->field.eps = 0.0;
-    field_set_kink(&l->field, l->from_x, 0.0, 1);
+    field_set_kink(&l->field, (Kink){l->from_x, 0.0, 1});
     l->x = l->from_x;
     l->v = 0.0;
     l->leg_time = l->parked = l->held = 0.0;
@@ -262,8 +262,9 @@ static void relaunch(Line *l)
     fail(l, LB_LOST);
 }
 
-void line_tick(Line *l, int frames, int command)
+void line_tick(Line *l, LineInput in)
 {
+    int frames = in.frames, command = in.command;
     if (!l->ready || frames < 0 || l->scene != LS_NONE || l->leg >= L_LEGS) {
         return;
     }
@@ -279,12 +280,15 @@ void line_tick(Line *l, int frames, int command)
         l->command = command;
         for (int k = 0; k < L_SUBSTEPS; k++) {
             int run = 0;
-            if (l->drift > 0.0 && (l->drift -= L_DT) <= 1e-12) {
-                l->drift = 0.0;
-                if (l->refuel && l->charge < CRANK_CHARGE) {
-                    l->charge = CRANK_CHARGE;
+            if (l->drift > 0.0) {
+                l->drift -= L_DT;
+                if (l->drift <= 1e-12) {
+                    l->drift = 0.0;
+                    if (l->refuel && l->charge < CRANK_CHARGE) {
+                        l->charge = CRANK_CHARGE;
+                    }
+                    l->refuel = 0;
                 }
-                l->refuel = 0;
             }
             if (l->charge > 0.0 && l->drift <= 0.0 && command != LC_COAST) {
                 run = command == LC_DOWN ? 1 : -1;
@@ -314,24 +318,31 @@ void line_tick(Line *l, int frames, int command)
         }
         l->x = x;
         l->v = (x - before) / frame;
-        if (l->banner_left > 0.0 && (l->banner_left -= frame) <= 0.0) {
-            l->banner = LB_NONE;
+        if (l->banner_left > 0.0) {
+            l->banner_left -= frame;
+            if (l->banner_left <= 0.0) {
+                l->banner = LB_NONE;
+            }
         }
         double need = line_hold_need(l);
         int near = fabs(l->x - l->target_x) < PARK_DX, still = fabs(l->v) < PARK_V;
         if (l->held > 0.0) {
             /* On a held mark (the church while the sexton cranks, the ford bell while it rings):
              * the leg ends once it has rung long enough. The clock runs while you wait. */
-            if (near && (l->held += frame) >= need - 1e-9) {
-                clear_leg(l);
-                continue;
+            if (near) {
+                l->held += frame;
+                if (l->held >= need - 1e-9) {
+                    clear_leg(l);
+                    continue;
+                }
             }
             if (!near) {
                 l->held = 0.0; /* the turn slid off the arm: start the ring again */
             }
         } else if (near && still && command == LC_COAST && fabs(l->field.eps) < 0.1 * MOTOR &&
                    l->drift <= 0.0) {
-            if ((l->parked += frame) >= PARK_T - 1e-9) {
+            l->parked += frame;
+            if (l->parked >= PARK_T - 1e-9) {
                 if (need <= 0.0) {
                     clear_leg(l);
                     continue;

@@ -12,11 +12,24 @@ typedef struct {
     double *prev, *cur, *next;
 } Field;
 
-int field_init(Field *f, int n, double x0, double dx, double dt, int periodic);
+/* n grid points from x0 in steps of dx, time step dt; periodic (1) or clamped (0) ends. */
+typedef struct {
+    int n;
+    double x0, dx, dt;
+    int periodic;
+} Grid;
+
+/* A kink (sign +1) or antikink (sign -1) with its centre and velocity. */
+typedef struct {
+    double centre, v;
+    int sign;
+} Kink;
+
+int field_init(Field *f, Grid grid);
 void field_free(Field *f);
 double field_x(const Field *f, int j);
-/* Exact moving kink (sign +1) or antikink (sign -1) with centre x0 and velocity v. */
-void field_set_kink(Field *f, double centre, double v, int sign);
+/* Exact moving kink (sign +1) or antikink (sign -1) with its centre and velocity. */
+void field_set_kink(Field *f, Kink k);
 /* Small-amplitude standing wave amp * cos(k x), starting at rest. */
 void field_set_wave(Field *f, double amp, double k);
 void field_step(Field *f);

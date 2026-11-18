@@ -77,7 +77,7 @@ dist/field.mjs: src/field.c src/observer.c src/line.c src/line_web.c src/pair.c 
 	mkdir -p dist
 	$(EMCC) $(CFLAGS) src/field.c src/observer.c src/line.c src/line_web.c src/pair.c src/pair_web.c -lm --no-entry -o $@ \
 	  -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,node \
-	  -sEXPORTED_FUNCTIONS=_fr_reset,_fr_step,_fr_time,_fr_position,_fr_velocity,_fr_energy,_fr_width,_fr_stopped,_fr_samples,_fr_count,_lw_reset,_lw_tick,_lw_answer,_lw_value,_lw_samples,_lw_count,_pw_reset,_pw_step,_pw_value,_pw_samples,_pw_history,_pw_count,_pw_columns,_pw_rows \
+	  -sEXPORTED_FUNCTIONS=_fr_reset,_fr_step,_fr_time,_fr_position,_fr_velocity,_fr_energy,_fr_width,_fr_stopped,_fr_samples,_fr_count,_lw_reset,_lw_command,_lw_tick,_lw_answer,_lw_value,_lw_samples,_lw_count,_pw_reset,_pw_step,_pw_value,_pw_samples,_pw_history,_pw_count,_pw_columns,_pw_rows \
 	  -sEXPORTED_RUNTIME_METHODS=HEAPF64
 
 smoke: web

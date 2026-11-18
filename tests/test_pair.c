@@ -47,11 +47,12 @@ static double gap_to_exact(const Field *f, double t, double v)
 
 /* Largest |phi - phi_exact| of an exact pair started at t = -40 and run to t = 40 on a grid dx, dt
  * = dx / 2. */
-static double pair_gap(double v, double dx)
+static double pair_gap(PairTrial trial)
 {
+    double v = trial.v, dx = trial.dx;
     double t0 = -40.0, worst = 0.0;
     Field f;
-    if (field_init(&f, (int)lround(120.0 / dx) + 1, -60.0, dx, 0.5 * dx, 0)) {
+    if (field_init(&f, (Grid){(int)lround(120.0 / dx) + 1, -60.0, dx, 0.5 * dx, 0})) {
         return NAN;
     }
     field_set_pair(&f, v, t0);
@@ -73,7 +74,7 @@ static void test_pair_follows_perring_skyrme(void)
 {
     double v = 0.5, t0 = -40.0;
     Field f;
-    CHECK(field_init(&f, 1201, -60.0, 0.1, 0.05, 0) == 0, "allocation failed");
+    CHECK(field_init(&f, (Grid){1201, -60.0, 0.1, 0.05, 0}) == 0, "allocation failed");
     field_set_pair(&f, v, t0);
     double xs[2];
     CHECK(field_fronts(&f, xs, 2) == 2 && xs[0] < -15.0 && xs[1] > 15.0,
@@ -93,7 +94,7 @@ static void test_pair_follows_perring_skyrme(void)
     /* The gap is the grid's: the kink runs 0.05 % slow on dx = 0.1 and sits where phi is steepest
      * (2 gamma rad per unit). */
     CHECK(worst < 0.15, "largest |phi - phi_exact| over t = -40..40: %.4g rad", worst);
-    double fine = pair_gap(v, 0.05);
+    double fine = pair_gap((PairTrial){v, 0.05});
     CHECK(worst / fine > 3.5 && worst / fine < 4.5,
           "gap %.4g on dx 0.1, %.4g on dx 0.05 (second order: 4)", worst, fine);
     CHECK(fabs(f.cur[f.n / 2] - 2.0 * PI) < 0.01,
@@ -109,8 +110,9 @@ static void test_pair_passes_through_with_the_phase_shift(void)
 {
     double speeds[5] = {0.1, 0.3, 0.5, 0.7, 0.9};
     for (int k = 0; k < 5; k++) {
-        double v = speeds[k], in, out, shift = pair_measure_shift(v, 0.1, &in, &out),
-               theory = sg_pair_shift(v);
+        Speeds fitted;
+        double v = speeds[k], shift = pair_measure_shift((PairTrial){v, 0.1}, &fitted),
+               theory = sg_pair_shift(v), in = fitted.in, out = fitted.out;
         CHECK(isfinite(shift), "v = %.1f: no two fronts after the collision (annihilated?)", v);
         CHECK(fabs(shift / theory - 1.0) < 0.05,
               "v = %.1f: shift %.5f vs 2 sqrt(1-v^2) ln(1/v) = %.5f", v, shift, theory);
@@ -120,8 +122,9 @@ static void test_pair_passes_through_with_the_phase_shift(void)
                shift, theory, fabs(shift / theory - 1.0), in, out);
     }
     /* Half the grid spacing: the error falls by about four (second-order scheme). */
-    double coarse = fabs(pair_measure_shift(0.7, 0.1, NULL, NULL) / sg_pair_shift(0.7) - 1.0);
-    double fine = fabs(pair_measure_shift(0.7, 0.05, NULL, NULL) / sg_pair_shift(0.7) - 1.0);
+    double coarse =
+        fabs(pair_measure_shift((PairTrial){0.7, 0.1}, NULL) / sg_pair_shift(0.7) - 1.0);
+    double fine = fabs(pair_measure_shift((PairTrial){0.7, 0.05}, NULL) / sg_pair_shift(0.7) - 1.0);
     CHECK(coarse / fine > 3.5 && coarse / fine < 4.5,
           "v = 0.7: shift error %.3g on dx 0.1, %.3g on dx 0.05", coarse, fine);
 }
@@ -130,7 +133,7 @@ static void test_pair_conserves_energy_momentum_and_speed(void)
 {
     double v = 0.5;
     Field f;
-    CHECK(field_init(&f, 2401, -120.0, 0.1, 0.05, 0) == 0, "allocation failed");
+    CHECK(field_init(&f, (Grid){2401, -120.0, 0.1, 0.05, 0}) == 0, "allocation failed");
     field_set_superposed_pair(&f, 20.0, v);
     double e0 = field_energy(&f), swing = 0.0, worst_p = 0.0;
     CHECK(fabs(e0 / sg_pair_energy(v) - 1.0) < 0.002, "pair energy %.5f vs 16 gamma = %.5f", e0,
@@ -157,8 +160,8 @@ static void test_pair_conserves_energy_momentum_and_speed(void)
     field_free(&f);
 
     /* One kink: P = 8 gamma v. */
-    CHECK(field_init(&f, 2000, -100.0, 0.1, 0.05, 0) == 0, "allocation failed");
-    field_set_kink(&f, 0.0, 0.6, 1);
+    CHECK(field_init(&f, (Grid){2000, -100.0, 0.1, 0.05, 0}) == 0, "allocation failed");
+    field_set_kink(&f, (Kink){0.0, 0.6, 1});
     for (int s = 0; s < 200; s++) {
         field_step(&f);
     }
@@ -171,9 +174,11 @@ static void test_breather_keeps_frequency_and_shape(void)
 {
     double omegas[4] = {0.3, 0.5, 0.8, 0.95};
     for (int k = 0; k < 4; k++) {
-        double w = omegas[k], drift, swing, fine_swing;
-        double measured = breather_measure_frequency(w, 0.1, 20, &drift, &swing, NULL);
-        breather_measure_frequency(w, 0.05, 20, NULL, &fine_swing, NULL);
+        double w = omegas[k];
+        BreatherStats coarse, fine;
+        double measured = breather_measure_frequency((BreatherTrial){w, 0.1, 20}, &coarse);
+        (void)breather_measure_frequency((BreatherTrial){w, 0.05, 20}, &fine);
+        double drift = coarse.energy_drift, swing = coarse.swing, fine_swing = fine.swing;
         CHECK(fabs(measured / w - 1.0) < 0.01, "omega %.2f measured %.6f", w, measured);
         CHECK(drift < 1e-4, "omega %.2f: energy drift between breaths %.3g", w, drift);
         CHECK(fine_swing < 1e-3,
@@ -187,8 +192,8 @@ static void test_breather_keeps_frequency_and_shape(void)
     /* Shape over one period at omega = 0.5. */
     Field f;
     double w = 0.5, worst = 0.0;
-    CHECK(field_init(&f, 1201, -60.0, 0.1, 0.05, 0) == 0, "allocation failed");
-    field_set_breather(&f, w, 0.0, 0.0);
+    CHECK(field_init(&f, (Grid){1201, -60.0, 0.1, 0.05, 0}) == 0, "allocation failed");
+    field_set_breather(&f, (Breather){w, 0.0, 0.0});
     int steps = (int)lround(2.0 * PI / w / f.dt);
     for (int s = 1; s <= steps; s++) {
         field_step(&f);
@@ -211,8 +216,9 @@ static void test_breather_energy(void)
     for (int k = 1; k <= 9; k++) {
         double w = 0.1 * k;
         Field f;
-        CHECK(field_init(&f, 1201, -60.0, 0.1, 0.05, 0) == 0, "allocation failed");
-        field_set_breather(&f, w, 0.25 * 2.0 * PI / w, 0.0); /* at a peak: the field stands still */
+        CHECK(field_init(&f, (Grid){1201, -60.0, 0.1, 0.05, 0}) == 0, "allocation failed");
+        field_set_breather(
+            &f, (Breather){w, 0.25 * 2.0 * PI / w, 0.0}); /* at a peak: the field stands still */
         CHECK(fabs(field_energy(&f) / sg_breather_energy(w) - 1.0) < 1e-3,
               "omega %.1f: E %.5f vs 16 sqrt(1 - omega^2) = %.5f", w, field_energy(&f),
               sg_breather_energy(w));
@@ -226,16 +232,19 @@ static void test_breather_is_a_bound_pair(void)
 {
     double omegas[2] = {0.3, 0.5};
     for (int k = 0; k < 2; k++) {
-        double w = omegas[k], wide;
-        breather_measure_frequency(w, 0.1, 6, NULL, NULL, &wide);
+        double w = omegas[k];
+        BreatherStats stats;
+        (void)breather_measure_frequency((BreatherTrial){w, 0.1, 6}, &stats);
+        double wide = stats.separation;
         CHECK(fabs(wide / sg_breather_separation(w) - 1.0) < 0.01,
               "omega %.1f: widest separation %.4f vs 2 arccosh(nu/omega)/nu = %.4f", w, wide,
               sg_breather_separation(w));
         printf("[breather] omega %.1f: widest front separation %.4f, theory %.4f\n", w, wide,
                sg_breather_separation(w));
     }
-    double wide;
-    breather_measure_frequency(0.8, 0.1, 6, NULL, NULL, &wide);
+    BreatherStats still;
+    (void)breather_measure_frequency((BreatherTrial){0.8, 0.1, 6}, &still);
+    double wide = still.separation;
     CHECK(wide == 0.0 && sg_breather_separation(0.8) == 0.0,
           "omega 0.8: |phi| never reaches pi, separation %.3f", wide);
 }
@@ -251,7 +260,7 @@ static void test_browser_adapter(void)
     CHECK(pw_step(4001) != 0 && pw_step(-1) != 0, "bad step count refused");
     /* The adapter steps exactly the solver of field.c from the same start. */
     Field f;
-    CHECK(field_init(&f, 1201, -60.0, 0.1, 0.05, 0) == 0, "allocation failed");
+    CHECK(field_init(&f, (Grid){1201, -60.0, 0.1, 0.05, 0}) == 0, "allocation failed");
     field_set_pair(&f, 0.5, pw_value(1));
     for (int s = 0; s < 300; s++) {
         field_step(&f);
@@ -260,7 +269,7 @@ static void test_browser_adapter(void)
     CHECK(fabs(pw_value(3) - field_energy(&f)) < 1e-12, "adapter energy %.12f vs solver %.12f",
           pw_value(3), field_energy(&f));
     const double *s = pw_samples();
-    CHECK(fabs(s[3 * 150] - field_value_at(&f, 0.0)) < 1e-12, "sample at x = 0");
+    CHECK(fabs(s[(size_t)3 * 150] - field_value_at(&f, 0.0)) < 1e-12, "sample at x = 0");
     field_free(&f);
     while (!pw_value(15)) {
         pw_step(4000);

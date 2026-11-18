@@ -2,6 +2,7 @@
 #include "field.h"
 
 #include <math.h>
+#include <stddef.h>
 
 static Field field;
 static double elapsed, position, velocity;
@@ -17,11 +18,11 @@ int fr_reset(double speed)
         field_free(&field);
     }
     ready = 0;
-    if (field_init(&field, 2000, -100.0, 0.1, 0.05, 0)) {
+    if (field_init(&field, (Grid){2000, -100.0, 0.1, 0.05, 0})) {
         return 1;
     }
     ready = 1;
-    field_set_kink(&field, 0.0, speed, 1);
+    field_set_kink(&field, (Kink){0.0, speed, 1});
     position = elapsed = 0.0;
     velocity = speed;
     stopped = 0;
@@ -77,7 +78,7 @@ const double *fr_samples(void)
             j = field.n - 3;
         }
         double fraction = fmax(0.0, fmin(1.0, u - j));
-        samples[2 * i] = field.cur[j] + fraction * (field.cur[j + 1] - field.cur[j]);
+        samples[2 * (size_t)i] = field.cur[j] + fraction * (field.cur[j + 1] - field.cur[j]);
         samples[2 * i + 1] = density(j) + fraction * (density(j + 1) - density(j));
     }
     return samples;

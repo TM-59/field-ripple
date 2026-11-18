@@ -42,17 +42,20 @@ enum {
 };
 
 /* Numeric story effects, one bit each, so the bench can remove them one by one. */
-enum {
-    LE_HUT = 1u << 0,   /* Ada winds the cell past the line, and Kit's call steadies the readout */
-    LE_ROUTE = 1u << 1, /* the mill: a short span; the church: a long span, and the sexton winds
-                           charge back */
-    LE_BOARD = 1u << 2, /* Kit's board cell goes into the line */
-    LE_SPILL = 1u << 3, /* the spill: in leg 4 the wet cell bleeds and the readout wobbles more */
-    LE_FORD = 1u << 4,  /* the ford: leg 4 goes past the water line to the ford bell; hold the turn
-                           while it rings */
-    LE_CUT = 1u << 5,   /* Kit's call is gone for the last leg, and a dry cell now loses the turn */
-    LE_ALL = (1u << 6) - 1u
-};
+/* Macros, not an enum: C enumerators are int, and the masks are combined with unsigned bit ops. */
+/* Ada winds the cell past the line, and Kit's call steadies the readout */
+#define LE_HUT (1U << 0U)
+/* the mill: a short span; the church: a long span, and the sexton winds charge back */
+#define LE_ROUTE (1U << 1U)
+/* Kit's board cell goes into the line */
+#define LE_BOARD (1U << 2U)
+/* the spill: in leg 4 the wet cell bleeds and the readout wobbles more */
+#define LE_SPILL (1U << 3U)
+/* the ford: leg 4 goes past the water line to the ford bell; hold the turn while it rings */
+#define LE_FORD (1U << 4U)
+/* Kit's call is gone for the last leg, and a dry cell now loses the turn */
+#define LE_CUT (1U << 5U)
+#define LE_ALL ((1U << 6U) - 1U)
 
 /* Commands: coast, run the motor down the valley (+x), run it up the valley (-x). */
 enum { LC_COAST, LC_DOWN, LC_UP };
@@ -132,7 +135,11 @@ void line_init(Line *l, unsigned effects);
 void line_free(Line *l);
 /* frames of four 0.05 t steps, under one command (LC_*). Does nothing while a scene is open or
  * after the end. */
-void line_tick(Line *l, int frames, int command);
+typedef struct {
+    int frames;
+    int command;
+} LineInput;
+void line_tick(Line *l, LineInput in);
 /* Close the open scene. Choice scenes take option 0 or 1; others take 0. Returns 0 when accepted.
  */
 int line_answer(Line *l, int option);

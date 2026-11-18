@@ -693,7 +693,8 @@ function lineFrame(seconds) {
     const frames = Math.min(Math.floor(lineAcc), 6 * lineRate);
     lineAcc -= Math.floor(lineAcc);
     if (frames) {
-      field._lw_tick(frames, motorWanted());
+      field._lw_command(motorWanted());
+      field._lw_tick(frames);
       ls = lineRead();
     }
     if (ls.scene >= 0) {

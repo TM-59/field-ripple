@@ -19,8 +19,24 @@ typedef struct {
 static const char *const SCENE_ID[LS_COUNT] = {"hut",  "stones", "bell", "spill",
                                                "ford", "cut",    "dawn"};
 
-static inline void run_line(uint64_t key, unsigned effects, int route, int ford, RunResult *out)
+/* The answers to the two choice scenes: route 0 the mill / 1 the church; ford 0 / 1. */
+typedef struct {
+    int route;
+    int ford;
+} Choices;
+
+/* One night of the bench: the keeper's key, the story effects that are on, and the choices. */
+typedef struct {
+    uint64_t key;
+    unsigned effects;
+    Choices choices;
+} RunPlan;
+
+static inline void run_line(const RunPlan *plan, RunResult *out)
 {
+    uint64_t key = plan->key;
+    unsigned effects = plan->effects;
+    int route = plan->choices.route, ford = plan->choices.ford;
     Line l;
     Keeper p;
     memset(out, 0, sizeof *out);
@@ -34,14 +50,15 @@ static inline void run_line(uint64_t key, unsigned effects, int route, int ford,
             int option = scene == LS_STONES ? route : scene == LS_FORD ? ford : 0;
             line_answer(&l, option);
             if (line_heavy(scene)) {
-                line_tick(&l, 1,
-                          keeper_command(&p, &l)); /* the first frame after the scene closes */
+                line_tick(&l,
+                          (LineInput){1, keeper_command(
+                                             &p, &l)}); /* the first frame after the scene closes */
                 frames++;
                 out->quiet[scene] = calm && l.loud == loud && l.banner != LB_HELD;
             }
             continue;
         }
-        line_tick(&l, 1, keeper_command(&p, &l));
+        line_tick(&l, (LineInput){1, keeper_command(&p, &l)});
         frames++;
     }
     out->completed = l.leg >= L_LEGS;
@@ -77,15 +94,7 @@ static inline uint64_t tension_key(int i, int run)
 enum { PLAY_SEEDS = 12, ABLATION_SEEDS = 96, TENSION_SEEDS = 16, TENSION_RUNS = 12 };
 /* Default choices for the ablation rows: the church bell, and the hill siren. */
 enum { DEFAULT_ROUTE = 1, DEFAULT_FORD = 1 };
-static inline void play_choices(int i, int *route, int *ford)
-{
-    *route = i % 2;
-    *ford = (i / 2) % 2;
-}
-static inline void tension_choices(int run, int *route, int *ford)
-{
-    *route = run % 2;
-    *ford = (run / 2) % 2;
-}
+static inline Choices play_choices(int i) { return (Choices){i % 2, (i / 2) % 2}; }
+static inline Choices tension_choices(int run) { return (Choices){run % 2, (run / 2) % 2}; }
 
 #endif
