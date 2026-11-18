@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "repository": "TM-59/field-ripple",
+  "entrypoints": {"test": "make test", "check": "make check"},
+  "kinds": {
+    "unit": {"framework": "CTest", "description": "Every program `make test` runs (one testcase each) plus the docs/theory contract check."},
+    "trace": {"framework": "CTest", "requirements": ["REQ-browser-adapter", "REQ-collisions", "REQ-flood-line", "REQ-kink-physics"], "description": "Only the unit testcases named with a [REQ-...] marker."},
+    "perf": {"framework": "CTest", "description": "Existing `make bench`: free motion at 0/0.6/0.9 c, energy drift, contraction, push/brake. One testcase; no timing threshold."},
+    "e2e": {"framework": "CTest", "description": "Existing `make smoke` (Emscripten build + Playwright real keys/touch, phone sizes, collision panel). One testcase."},
+    "integration": {"reason": "No layer between the C programs and the browser smoke; the smoke already drives the built WASM end to end."},
+    "visual": {"reason": "The smoke refreshes screenshots but compares no pixels; no visual baseline exists."},
+    "mem": {"reason": "No sanitizer build in this repo; memory checks run from the central M65 adapter (testing/adapters/nonfunctional.mk)."},
+    "infra": {"reason": "No deployed infrastructure."},
+    "quality": {"reason": "Coverage/mutation are M66 and not adopted here."}
+  }
+}
