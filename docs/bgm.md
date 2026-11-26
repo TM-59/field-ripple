@@ -71,4 +71,4 @@
 - dist bytes
 - dist 2,608,745 B(10 MB の門の内。BGM 4 曲 2,219,157 B を含む)。
 - 既存の `make test`(物理・GIF・物語・衝突、`story_bench --check` 8 行一致)と `node scripts/smoke.mjs`(19 項目、夜を実入力で走らせる)は変わらず通る。
-- 遊べる門(`bin/playability-gate.py`、main と branch を同じ時間帯 2026-11-27 08:44): main 7/7・branch 7/7(②タップで進行 ○ click,pointerdown,pointerup → ○ click,pointerdown,pointerup)。
+- 遊べる門(`bin/playability-gate.py`、main と branch を同じ時間帯 2026-11-27 08:44): main 7/7・branch 7/7(②タップで進行 p 10.7 / l 12 秒 → 10.3 / 13 秒)。
