@@ -1,0 +1,72 @@
+{
+ "note": "BGM の生成計画(field-ripple M63 #34、親 project-context#598)。caption は音の特徴だけ(曲名・作者・作品名を書かない。musical-notation-translator の docs/copyright-policy.md)。どの場面も文字か計器を読むので全部器楽。soft の曲のループは bars × 4 × 60 / bpm ≥ 16 秒(observatory 29.1・story 25.7・dawn 24.0 秒)。 候補は Colab の GPU で作る(local-llm-ops #260、python -m tools.colab bgm)、落ちる先は scripts/bgm_gen.py(手元の CPU)。scripts/bgm_bake.py が門・ループの切り出し・書き出し(web/bgm/)。",
+ "engine": "ACE-Step/Ace-Step1.5:acestep-v15-turbo",
+ "steps": 8,
+ "note_loop": "ループは生成の長さより十分短く取り、継ぎ目の始点を探す余地を残す。soft の曲は継ぎ目を 2 秒重ね、長さを 1 小節ずつ縮めて 16 秒以上で継ぎ目の音色の跳びが最小の物を採る。pulse は 0.12 秒(拍がずれない)。",
+ "seeds": [
+  911,
+  912,
+  913,
+  914,
+  915,
+  916
+ ],
+ "note_seeds": "seed は 1 場面 6 本。他の作品と同じ caption・seed を使わない(既存の plan.json の seed 11〜876 と別の 911〜916)。",
+ "scenes": {
+  "observatory": {
+   "role": "基調(入口・自由観測・衝突とブリーザーの画面)",
+   "loop": true,
+   "bpm": 66,
+   "key": "A major",
+   "seconds": 44,
+   "bars": 8,
+   "mood": "soft",
+   "xf": 2.0,
+   "captions": [
+    "slow nocturnal ballad, soft electric piano melody, warm analog string pad, gentle harp ripples like rain on glass, a quiet observatory at night, thoughtful and calm, no drums, instrumental",
+    "tender ballad, mellow vibraphone and clarinet melody, soft bowed strings, slow wave-like chord swells, patient and curious, no percussion, instrumental"
+   ]
+  },
+  "line": {
+   "role": "戦闘の役(The Flood Line の区間で turn を送る間)",
+   "loop": true,
+   "bpm": 108,
+   "key": "E minor",
+   "seconds": 44,
+   "bars": 16,
+   "mood": "pulse",
+   "captions": [
+    "tense driving night track, steady kick drum on every beat, pulsing synth bass, fast staccato violins, ticking hi-hat, rain and a rising river, urgent and focused, instrumental",
+    "propulsive storm music, tight snare groove on every beat, chugging cellos, low brass hits, rolling timpani, racing to hold back a flood, determined, instrumental"
+   ]
+  },
+  "story": {
+   "role": "物語(The Flood Line の場面。重い場面と一時停止は 0.4 倍)",
+   "loop": true,
+   "bpm": 56,
+   "key": "A major",
+   "seconds": 40,
+   "bars": 6,
+   "mood": "soft",
+   "xf": 2.0,
+   "captions": [
+    "sparse rainy night underscore, soft solo piano single notes, low cello drone, faint warm pad, long pauses, voices over a crackling telephone line, quiet and anxious, no drums, instrumental",
+    "minimal hushed score, glassy bell tones over a soft string drone, wide near silence, a long wet night remembered, no percussion, instrumental"
+   ]
+  },
+  "dawn": {
+   "role": "結末(夜の終わりの場面)",
+   "loop": true,
+   "bpm": 60,
+   "key": "D major",
+   "seconds": 40,
+   "bars": 6,
+   "mood": "soft",
+   "xf": 2.0,
+   "captions": [
+    "slow dawn ballad, warm piano and viola melody, gentle rising string ensemble, the rain easing at first light, weary and hopeful, no drums, instrumental",
+    "gentle closing ballad, soft acoustic guitar and french horn duet, slow strings, a quiet river after the storm, bittersweet, no percussion, instrumental"
+   ]
+  }
+ }
+}

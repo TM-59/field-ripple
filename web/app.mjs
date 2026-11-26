@@ -1,3 +1,4 @@
+import { BgmPlayer, cue } from './bgm.mjs';
 import { initCollide } from './collide.mjs';
 import createField from './field.mjs';
 
@@ -278,6 +279,7 @@ function frame(now) {
     }
   }
   update();
+  musicFrame();
   requestAnimationFrame(frame);
 }
 for (const name of ['left', 'right']) {
@@ -1031,6 +1033,38 @@ function fromCanvas(el) {
   const cb = gateCanvas().getBoundingClientRect(),
     r = el.getBoundingClientRect();
   return { x: r.left + r.width / 2 - cb.left, y: r.top + r.height / 2 - cb.top };
+}
+// ------------------------------------------------------------------ music (docs/bgm.md)
+// Ballad in the entry and the observatory, a pulse track while the night runs, quiet music under a
+// scene and its own track for the dawn. Nothing loads before the first press.
+const music = new BgmPlayer();
+const muteButton = $as('mute', HTMLButtonElement);
+let muted = false;
+/** @param {boolean} value */
+function setMuted(value) {
+  muted = value;
+  muteButton.setAttribute('aria-pressed', String(muted));
+  muteButton.setAttribute('aria-label', muted ? 'Play music' : 'Mute music');
+  muteButton.title = muted ? 'Music off · M plays' : 'Music on · M mutes';
+}
+muteButton.addEventListener('click', () => setMuted(!muted));
+window.addEventListener('pointerdown', () => music.unlock(), true);
+window.addEventListener(
+  'keydown',
+  (e) => {
+    music.unlock();
+    if (e.key.toLowerCase() === 'm' && !e.repeat && !targetMatches(e.target, 'input,select'))
+      setMuted(!muted);
+  },
+  true,
+);
+const musicCue = () => {
+  const s = ls && mode === 'line' && ls.scene >= 0 ? SCENES[ls.scene] : null;
+  return cue({ mode, scene: s ? s.id : null, heavy: Boolean(s?.heavy), paused: linePaused });
+};
+function musicFrame() {
+  music.set(musicCue(), muted);
+  window.musicView = { cue: musicCue(), ...music.state() };
 }
 window.__tmGate = {
   version: 1,
