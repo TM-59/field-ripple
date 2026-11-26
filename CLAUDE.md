@@ -30,6 +30,12 @@ C11 + libm の sine-Gordon 場の実験。`src/field.c` が物理計算の正典
 - `tests/test_pair.c` が解析解との照合(ずれ 5 %・振動数 1 %・エネルギー・運動量・格子での 2 次収束)を強制する。理論は `docs/theory/06-collisions-and-breathers.md`(S27〜S34)。
 - 格子の限界: v = 0.95 は幅が 3 格子でずれが 9 % 外れる、ω = 0.2 は振動数が 0.94 % 高い(dx を半分で 1/4)。
 
+## BGM(2026-11-27、Issue #34)
+
+- ブラウザー版だけに BGM。`web/bgm.mjs` の `cue()` が画面から曲を選ぶ: 入口・自由観測・衝突の画面 = observatory(基調のバラード)、夜の区間 = line(戦闘の役、pulse)、場面 = story(0.7 倍、重い場面と夜の一時停止 0.4 倍)、夜明け = dawn。全部器楽。端末版・CSV/SVG/GIF は無音。
+- 曲は ACE-Step 1.5(MIT)の独自生成。`docs/bgm/plan.json` から作り、`scripts/bgm_bake.py` の門を緩めずに通した物だけ(`docs/bgm.md`)。第三者の音声は使わない。最初の操作の前は読まない。
+- 消音(♪ 44px・M)は出口(master)でも切る。`node scripts/bgm-smoke.mjs`(ローカル専用)が確かめる。
+
 ## 独自原画の例外 (2026-10-24、Issue #8)
 
 `assets/observatory.jpg` は Codex built-in image_gen で生成した独自デザイン。
