@@ -1,0 +1,80 @@
+{
+ "checks": [
+  {
+   "what": "nothing fetched before the first press",
+   "fetched": 0
+  },
+  {
+   "what": "observatory plays",
+   "cue": {
+    "track": "observatory",
+    "gain": 1
+   },
+   "level": -21.3,
+   "gain": 0.45
+  },
+  {
+   "what": "story plays",
+   "cue": {
+    "track": "story",
+    "gain": 0.7
+   },
+   "level": -25.9,
+   "gain": 0.315
+  },
+  {
+   "what": "mute during a crossfade silences the fading track too",
+   "level": -120
+  },
+  {
+   "what": "line plays",
+   "cue": {
+    "track": "line",
+    "gain": 1
+   },
+   "level": -17.8,
+   "gain": 0.45
+  },
+  {
+   "what": "pause ducks",
+   "gain": [
+    0.45,
+    0.18000000000000002
+   ],
+   "level": [
+    -17.8,
+    -36.9
+   ]
+  },
+  {
+   "what": "♪ mutes and restores",
+   "size": {
+    "x": 1196,
+    "y": 25,
+    "width": 44,
+    "height": 44
+   },
+   "level": [
+    -120,
+    -26.4
+   ]
+  },
+  {
+   "what": "cues: heavy scenes story 0.4x, dawn, entry and observatory (paused or not) observatory"
+  },
+  {
+   "what": "dist bytes",
+   "bytes": 2608745
+  }
+ ],
+ "fetched": [
+  "list.json",
+  "observatory.ogg",
+  "line.ogg",
+  "story.ogg",
+  "dawn.ogg"
+ ],
+ "ok": true,
+ "seconds": 21.8,
+ "when": "2026-11-26T23:43:13.184Z"
+}
