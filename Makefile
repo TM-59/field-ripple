@@ -68,7 +68,9 @@ bench: bench_field
 	./bench_field
 
 web: dist/field.mjs
-	cp web/index.html web/style.css web/app.mjs web/collide.mjs dist/
+	cp web/index.html web/style.css web/app.mjs web/collide.mjs web/bgm.mjs dist/
+	mkdir -p dist/bgm
+	cp web/bgm/* dist/bgm/
 	mkdir -p dist/assets
 	cp assets/observatory.jpg dist/assets/
 	python3 scripts/check_size.py

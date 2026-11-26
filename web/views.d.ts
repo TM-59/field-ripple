@@ -111,6 +111,24 @@ interface Window {
   fieldView?: FieldView;
   lineView?: LineView;
   collideView?: CollideView;
+  /** The music player (web/bgm.mjs) for scripts/bgm-smoke.mjs. */
+  musicView?: BgmView;
   /** Common test hook of the playability gate (project-context rules/playability.json). */
   __tmGate?: object;
+}
+
+/** What the music player asks for and what it plays (web/bgm.mjs). */
+interface BgmView {
+  cue: { track: string; gain: number };
+  want: string | null;
+  playing: string;
+  gain: number;
+  muted: boolean;
+  unlocked: boolean;
+  running: boolean;
+  fetched: string[];
+  loaded: string[];
+  failed: string[];
+  /** Output RMS in dBFS. */
+  level: number;
 }
